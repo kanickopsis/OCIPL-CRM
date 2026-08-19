@@ -94,9 +94,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--cream);color:var(-
       <p style="font-size:12px;color:var(--grey);line-height:1.6;margin-bottom:24px">
         Your dedicated recruitment portal from Opsis Consulting. Access your JD form, review candidates, schedule interviews, and track placements — all in one place.
       </p>
-      <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px" onclick="enterPortal()">
+      <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px" onclick="enterPortal()" id="enterBtn">
         Enter Portal →
       </button>
+      <div id="enterMsg" style="font-size:12px;color:var(--grey);margin-top:8px;display:none">Connecting…</div>
       <p style="font-size:11px;color:var(--grey);margin-top:16px">
         📞 8123999977 &nbsp;|&nbsp; ✉ info@opsisplacements.com
       </p>
@@ -137,9 +138,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--cream);color:var(-
 <script>
 const SUPABASE_URL='https://zpywagmjesyzhedqnoch.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpweXdhZ21qZXN5emhlZHFub2NoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MTA4ODQsImV4cCI6MjA5NzI4Njg4NH0.x64oLcwqZPZZIqj35Ld9JG06XP7bKt3SMdrADcG1dJc';
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let sb=null;
 const EJS_SVC='service_llgpy53',EJS_TPL='template_ofjfrbp',EJS_KEY='t4LYcYSryDAgwP0Iw';
-emailjs.init(EJS_KEY);
 
 const token=new URLSearchParams(location.search).get('token');
 let shareData=null;
@@ -543,11 +543,11 @@ async function saveNewReq(data){
 
 
 function onLibsReady(){
-  // Supabase loaded — now init
+  sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  try{emailjs.init(EJS_KEY);}catch(e){}
   init();
 }
-// If already loaded (cached), call immediately
-if(typeof supabase!=='undefined'){onLibsReady();}
+if(typeof supabase!=='undefined'&&supabase.createClient){onLibsReady();}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="onLibsReady()"></script>
 <script src="https://cdn.emailjs.com/dist/email.min.js" defer></script>
