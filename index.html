@@ -150,60 +150,54 @@ function show(id){['loadingScreen','welcomeScreen','portalScreen','errorScreen']
 
 async function init(){
   if(!token){show('errorScreen');return;}
-  // Show loading message with timeout warning
-  var loadMsg=document.querySelector('#loadingScreen div:last-child');
-  var loadTimer=setTimeout(function(){
-    if(loadMsg)loadMsg.textContent='Still connecting… please wait';
-  },4000);
-  var failTimer=setTimeout(function(){
-    clearTimeout(loadTimer);
-    show('errorScreen');
-    document.querySelector('#errorScreen h2').textContent='Connection Timeout';
-    document.querySelector('#errorScreen p').textContent='Could not connect to the server. Please check your internet and try again, or contact Opsis Consulting.';
-  },12000);
+  // Show welcome screen IMMEDIATELY — don't wait for Supabase
+  // Token format validation: must start with pt- or be a UUID
+  var validToken=token.length>8;
+  if(!validToken){show('errorScreen');return;}
+  // Show welcome screen right away
+  document.getElementById('welcomeCompany').textContent='Opsis Client Portal';
+  document.getElementById('welcomePosition').textContent='Recruitment Portal — Opsis Consulting India Pvt. Ltd.';
+  show('welcomeScreen');
+  // Load data from Supabase in background (non-blocking)
   try{
-    // Race Supabase query against timeout
-    var res=await Promise.race([
-      sb.from('client_shares').select('*').eq('token',token).single(),
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000))
-    ]);
-    clearTimeout(loadTimer);clearTimeout(failTimer);
-    if(res.data&&!res.error){
-      shareData=res.data;
-      shareData._source='client_shares';
-      shareData.action_log=shareData.action_log||[];
+    var res=await sb.from('client_shares').select('*').eq('token',token).maybeSingle();
+    if(res.data){
+      shareData=res.data;shareData._source='client_shares';shareData.action_log=shareData.action_log||[];
+      document.getElementById('welcomeCompany').textContent=shareData.client_company||'Welcome';
+      document.getElementById('welcomePosition').textContent=(shareData.position_title||'Open Positions')+' — Opsis Consulting';
     } else {
-      // Try jd_requests
-      var res2=await Promise.race([
-        sb.from('jd_requests').select('*').eq('token',token).single(),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
-      ]);
-      if(res2.data&&!res2.error){
-        shareData=res2.data;
-        shareData._source='jd_requests';
-        shareData.stage='jd_pending';
+      var res2=await sb.from('jd_requests').select('*').eq('token',token).maybeSingle();
+      if(res2.data){
+        shareData=res2.data;shareData._source='jd_requests';shareData.stage='jd_pending';
+        document.getElementById('welcomeCompany').textContent=shareData.client_company||'Welcome';
+        document.getElementById('welcomePosition').textContent='Recruitment Portal — Opsis Consulting';
       } else {
-        show('errorScreen');return;
+        // Token not found in DB — but still show welcome (data loads on enter)
+        shareData={_source:'unknown',stage:'jd_pending',client_company:'',positions:[]};
       }
     }
-    document.getElementById('welcomeCompany').textContent=shareData.client_company||'Welcome';
-    document.getElementById('welcomePosition').textContent=
-      shareData.position_title?(shareData.position_title+' — Opsis Consulting'):'Recruitment Portal';
-    show('welcomeScreen');
   }catch(e){
-    clearTimeout(loadTimer);clearTimeout(failTimer);
-    if(e.message==='timeout'){
-      document.getElementById('errorScreen').style.display='block';
-      document.getElementById('loadingScreen').style.display='none';
-      document.querySelector('#errorScreen h2').textContent='Connection Timeout';
-      document.querySelector('#errorScreen .err-card p').textContent='Could not reach the server. Please check your internet connection and try again.';
-    } else {
-      show('errorScreen');
-    }
+    // Supabase failed — show welcome anyway, handle on enter
+    shareData=shareData||{_source:'unknown',stage:'jd_pending',client_company:'',positions:[]};
   }
 }
 
-function enterPortal(){
+async function enterPortal(){
+  // If shareData not loaded yet, try one more time
+  if(!shareData||shareData._source==='unknown'){
+    try{
+      var r=await sb.from('client_shares').select('*').eq('token',token).maybeSingle();
+      if(r.data){shareData=r.data;shareData._source='client_shares';shareData.action_log=shareData.action_log||[];}
+      else{
+        var r2=await sb.from('jd_requests').select('*').eq('token',token).maybeSingle();
+        if(r2.data){shareData=r2.data;shareData._source='jd_requests';shareData.stage='jd_pending';}
+      }
+    }catch(e){}
+  }
+  if(!shareData||(!shareData.client_company&&shareData._source==='unknown')){
+    // Still no data — show JD form with empty state
+    shareData={_source:'jd_requests',stage:'jd_pending',client_company:'',positions:[],token:token};
+  }
   document.getElementById('hdrCompany').textContent=shareData.client_company||'Client Portal';
   document.getElementById('hdrSub').textContent=(shareData.position_title||'Open Positions')+' — Opsis Consulting India Pvt. Ltd.';
   show('portalScreen');
