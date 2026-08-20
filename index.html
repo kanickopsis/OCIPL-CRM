@@ -315,7 +315,8 @@ function renderSlots(el){
   if(!cwS.length){
     el.innerHTML='<div class="card"><div class="cb2" style="text-align:center;padding:48px"><div style="font-size:40px;margin-bottom:12px">📅</div>'+
     '<div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:8px">Interview Scheduling</div>'+
-    '<div style="font-size:13px;color:var(--grey);line-height:1.6">Our team is coordinating interview slots. Options will appear here shortly.</div></div></div>'+nrHtml();return;
+    '<div style="font-size:13px;color:var(--grey);line-height:1.6;margin-bottom:20px">Our team is coordinating interview slots based on candidate availability. Options will appear here shortly.</div>'+
+    '<button class="btn bo" onclick="reqNewSlots()" style="margin-top:8px">💬 Request Specific Date/Time</button></div></div>'+nrHtml();return;
   }
   window._swSlots=cwS; // Store for onclick access
   var html='<div class="card"><div class="ch"><h2>📅 Select Interview Slots</h2><p>Please confirm your preferred interview time for each candidate</p></div>'+
@@ -335,10 +336,34 @@ function renderSlots(el){
       });
       if(c.slotNotes)html+='<div style="font-size:12px;color:var(--grey);padding:8px;background:#f9f7f4;border-radius:6px;margin-bottom:10px">📌 '+esc(c.slotNotes)+'</div>';
       if(_candSel[ci]!==undefined){html+='<button class="btn bp" onclick="confSlot('+ci+')" style="width:100%;margin-top:10px">✅ Confirm This Slot →</button>';}
+      html+='<button class="btn bo" onclick="reqNewSlots()" style="width:100%;margin-top:8px;font-size:12px">None of these work? Request new slots</button>';
     }
     html+='</div></div>';
   });
   el.innerHTML=html+nrHtml();
+}
+
+function reqNewSlots(){
+  var msg=prompt('Please share your preferred dates and times for the interview:\n(e.g. Monday 25 Aug after 11am, Tuesday 26 Aug anytime)');
+  if(!msg)return;
+  sb.from('jd_requests').insert({
+    token:'slot-req-'+Date.now(),
+    client_id:shareData.client_id||'',
+    client_company:shareData.client_company||'',
+    positions:[{title:'Interview Slot Request',notes:msg}],
+    status:'slot_request'
+  }).then(function(){
+    try{
+      emailjs.init('t4LYcYSryDAgwP0Iw');
+      emailjs.send('service_llgpy53','template_ofjfrbp',{
+        to_email:'info@opsisplacements.com',
+        subject:'Interview Slot Request — '+(shareData.client_company||'Client'),
+        message:'<p><strong>'+(shareData.client_company||'')+'</strong> has requested new interview slots.</p><p>Preferred times: <strong>'+msg+'</strong></p><p>Please coordinate with the candidate and update the portal.</p>',
+        from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'
+      });
+    }catch(e){}
+    alert('Your request has been sent to our team. We will update the available slots within 24 hours.');
+  }).catch(function(){alert('Could not send request. Please email info@opsisplacements.com');});
 }
 
 function pickSlot(ci,si){_candSel[ci]=si;renderPortal();}
@@ -387,6 +412,8 @@ function renderOffer(el){
     '<button class="btn bp" onclick="saveJoining('+i+')">Confirm & Submit →</button></div>')+
     '</div></div>';
   });
+  // Add extension approvals
+  (shareData.candidates||[]).forEach(function(c,i){if(c.extensionRequest&&c.extensionRequest.status==='pending')html+=renderExtApproval(c,i);});
   el.innerHTML=html+nrHtml();
 }
 
@@ -411,6 +438,65 @@ function saveJoining(i){
 }
 
 /* ── STAGE 5: DONE ───────────────────────────────────────── */
+function renderExtApproval(c,i){
+  var er=c.extensionRequest;if(!er||er.status!=='pending')return '';
+  var fmtDate=function(d){try{return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});}catch(e){return d;}};
+  return '<div class="card"><div class="ch"><h2>📅 Joining Date Extension Request</h2><p>'+esc(c.name||'Candidate')+'</p></div><div class="cb2">'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+
+    '<div class="chip"><div class="chip-l">📅 Current Date</div><div class="chip-v">'+fmtDate(c.offerData&&c.offerData.joinDate||'—')+'</div></div>'+
+    '<div class="chip"><div class="chip-l">📅 Requested New Date</div><div class="chip-v" style="color:var(--warn)">'+fmtDate(er.newDate)+'</div></div>'+
+    '</div>'+
+    '<div style="font-size:13px;color:var(--grey);margin-bottom:16px;padding:10px;background:#f9f7f4;border-radius:6px">'+
+    '<strong>Reason:</strong> '+esc(er.reason)+'</div>'+
+    '<div style="display:flex;gap:8px">'+
+    '<button class="btn bp" onclick="approveExtension('+i+')" style="flex:1;background:var(--ok)">✅ Approve Extension</button>'+
+    '<button class="btn bo" onclick="declineExtension('+i+')" style="flex:1;color:var(--err);border-color:var(--err)">❌ Decline — Original Date Stands</button>'+
+    '</div></div></div>';
+}
+
+async function approveExtension(i){
+  var cands=shareData.candidates||[];var c=cands[i];if(!c||!c.extensionRequest)return;
+  var newDate=c.extensionRequest.newDate;
+  c.extensionRequest.status='approved';c.extensionRequest.decidedAt=new Date().toISOString();
+  if(c.offerData)c.offerData.joinDate=newDate;
+  shareData.candidates=cands;
+  try{
+    await sb.from('client_shares').update({candidates:cands}).eq('token',token);
+    var fmtDate=function(d){try{return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});}catch(e){return d;}};
+    var html2='<p>The joining date extension for <strong>'+esc(c.name||'')+'</strong> has been <strong style="color:#059669">APPROVED</strong>.</p>'+
+      '<p>New joining date: <strong>'+fmtDate(newDate)+'</strong></p>';
+    sendPortalEmail('Extension Approved — '+esc(c.name||'')+' | Opsis',html2,'Joining Date Extension — Approved');
+    renderPortal();
+  }catch(e){alert('Could not save.');}
+}
+
+async function declineExtension(i){
+  var cands=shareData.candidates||[];var c=cands[i];if(!c||!c.extensionRequest)return;
+  c.extensionRequest.status='declined';c.extensionRequest.decidedAt=new Date().toISOString();
+  shareData.candidates=cands;
+  try{
+    await sb.from('client_shares').update({candidates:cands}).eq('token',token);
+    var html2='<p>The joining date extension for <strong>'+esc(c.name||'')+'</strong> has been <strong style="color:#dc2626">DECLINED</strong>.</p>'+
+      '<p>Original joining date stands.</p>';
+    sendPortalEmail('Extension Declined — '+esc(c.name||'')+' | Opsis',html2,'Joining Date Extension — Declined');
+    renderPortal();
+  }catch(e){alert('Could not save.');}
+}
+
+function sendPortalEmail(subject,bodyContent,subheading){
+  var html='<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">'+
+    '<div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;overflow:hidden">'+
+    '<div style="background:#1b3a6b;padding:20px 24px"><h2 style="color:#fff;margin:0;font-size:16px">OPSIS CONSULTING INDIA PVT. LTD.</h2>'+
+    '<p style="color:rgba(255,255,255,.6);margin:4px 0 0;font-size:11px">'+esc(subheading)+'</p></div>'+
+    '<div style="padding:24px"><p style="margin:0 0 16px;font-size:14px;color:#333">Dear '+esc(shareData.client_company||'Sir/Madam')+',</p>'+
+    bodyContent+'<p style="font-size:12px;color:#999;margin-top:20px;text-align:center">Opsis Consulting India Pvt. Ltd. | 8123999977 | info@opsisplacements.com</p></div></div></body></html>';
+  try{
+    emailjs.init('t4LYcYSryDAgwP0Iw');
+    emailjs.send('service_llgpy53','template_ofjfrbp',{to_email:shareData.client_email||shareData.auth_email||'',subject:subject,message:html,from_email:'info@opsisplacements.com',from_name:'Opsis Consulting India Pvt. Ltd.',reply_to:'info@opsisplacements.com'});
+    emailjs.send('service_llgpy53','template_ofjfrbp',{to_email:'info@opsisplacements.com',subject:'[COPY] '+subject,message:html,from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'});
+  }catch(e){}
+}
+
 function renderDone(el){
   var joined=(shareData.candidates||[]).filter(function(c){return c.pipelineStatus==='joined';});
   el.innerHTML='<div class="card"><div class="cb2" style="text-align:center;padding:48px">'+
