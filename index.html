@@ -309,13 +309,71 @@ async function markI(i,status){
 }
 
 // ── STAGES 3-5 ───────────────────────────────────────────────
-var _sel=[];
 function renderSlots(el){
-  var slots=shareData.interview_slots||[];
-  el.innerHTML='<div class="card"><div class="card-hd"><h2>📅 Select Interview Slots</h2><p>Choose your preferred dates for interviews</p></div><div class="card-body">'+
-  '<div class="al ai">Select your preferred slot(s) below and confirm.</div>'+
-  (slots.length?slots.map(function(s,i){var sel=_sel.includes(String(s.id||i));return '<div onclick="ts(\''+String(s.id||i)+'\')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid '+(sel?'var(--navy)':'var(--lgrey)')+';border-radius:8px;margin-bottom:8px;cursor:pointer;background:'+(sel?'#eff6ff':'#fff')+'">'+(sel?'✅':'🗓')+' <div><div style="font-size:13px;font-weight:600">'+esc(fmtD(s.date||s))+'</div><div style="font-size:11px;color:var(--grey)">'+(s.format||'Video / In-person')+'</div></div></div>';}).join('')+'<button class="btn bp" onclick="subSlots()" style="width:100%;margin-top:12px">Confirm Slots →</button>':'<div style="text-align:center;padding:32px;color:var(--grey)">📅 Slot options will appear here soon</div>')+
-  '</div></div>'+nrHtml();
+  var cands=shareData.candidates||[];
+  var candsWithSlots=cands.filter(function(c){return c.interview_slots&&c.interview_slots.length;});
+  if(!candsWithSlots.length){
+    el.innerHTML='<div class="card"><div class="card-body" style="text-align:center;padding:48px"><div style="font-size:40px;margin-bottom:12px">📅</div><div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:8px">Interview Scheduling</div><div style="font-size:13px;color:var(--grey);line-height:1.6">Our team is coordinating interview slots. Options will appear here shortly.</div></div></div>'+nrHtml();return;
+  }
+  var html='<div class="card"><div class="card-hd"><h2>📅 Select Interview Slots</h2><p>Please confirm your preferred time for each candidate</p></div><div class="card-body"><div class="al ai">Select one slot per candidate below and click Confirm. We will send you a calendar invite.</div></div></div>';
+  candsWithSlots.forEach(function(c,ci){
+    var confirmed=c.confirmedSlot;
+    html+='<div class="card"><div class="card-hd"><h2>'+esc(c.name||'Candidate')+'</h2><p>'+esc(c.currentRole||'')+(c.currentCompany?' · '+esc(c.currentCompany):'')+'</p></div><div class="card-body">';
+    if(confirmed){
+      html+='<div class="al ao">✅ Slot confirmed: <strong>'+esc(confirmed.label||confirmed.date)+'</strong> ('+esc(confirmed.format)+')</div>';
+    } else {
+      (c.interview_slots||[]).forEach(function(sl){
+        var slId=String(sl.id||sl.date);var isSel=_candSel[ci]&&_candSel[ci].id===slId;
+        html+='<div onclick="selCandSlot('+ci+',''+slId+'','+JSON.stringify(sl).replace(/'/g,"\'")+')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid '+(isSel?'var(--navy)':'var(--lgrey)')+';border-radius:8px;margin-bottom:8px;cursor:pointer;background:'+(isSel?'#eff6ff':'#fff')+'">'+
+          '<span style="font-size:18px">'+(isSel?'✅':'🗓')+'</span>'+
+          '<div><div style="font-size:13px;font-weight:600">'+esc(sl.label||fmtD(sl.date))+'</div>'+
+          '<div style="font-size:11px;color:var(--grey)">'+esc(sl.format||'Video')+'</div></div></div>';
+      });
+      if(c.slotNotes)html+='<div style="font-size:12px;color:var(--grey);margin-top:6px;padding:8px;background:#f9f7f4;border-radius:6px">📌 '+esc(c.slotNotes)+'</div>';
+      if(_candSel[ci])html+='<button class="btn bp" onclick="confCandSlot('+ci+')" style="width:100%;margin-top:12px">✅ Confirm This Slot →</button>';
+    }
+    html+='</div></div>';
+  });
+  el.innerHTML=html+nrHtml();
+}
+
+var _candSel={};
+function selCandSlot(ci,slId,sl){_candSel[ci]={id:slId,sl:sl};renderPortal();}
+
+async function confCandSlot(ci){
+  var cands=shareData.candidates||[];
+  var candsWithSlots=cands.filter(function(c){return c.interview_slots&&c.interview_slots.length;});
+  var cand=candsWithSlots[ci];if(!cand||!_candSel[ci])return;
+  var sl=_candSel[ci].sl;
+  // Find the actual candidate in shareData.candidates and update
+  cands.forEach(function(c){if(c.name===cand.name){c.confirmedSlot=sl;c.interviewStatus='slot_confirmed';}});
+  shareData.candidates=cands;
+  try{
+    await sb.from('client_shares').update({candidates:cands}).eq('token',token);
+    // Confirmation email
+    var fmtDate=function(d){try{return new Date(d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'long',year:'numeric'});}catch(e){return d;}};
+    var emailBody='<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">'+
+      '<div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;overflow:hidden">'+
+      '<div style="background:#1b3a6b;padding:20px 24px"><h2 style="color:#fff;margin:0;font-size:16px">OPSIS CONSULTING INDIA PVT. LTD.</h2>'+
+      '<p style="color:rgba(255,255,255,.6);margin:4px 0 0;font-size:11px">Interview Slot Confirmed</p></div>'+
+      '<div style="padding:24px">'+
+      '<p style="color:#333;font-size:14px;margin:0 0 16px">Dear '+esc(shareData.client_company||'Sir/Madam')+',</p>'+
+      '<p style="color:#333;font-size:14px;margin:0 0 16px;line-height:1.6">This confirms your interview slot selection for <strong>'+esc(cand.name||'')+'</strong>.</p>'+
+      '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;border:1px solid #e8e4da">'+
+      '<tr><td style="padding:10px 14px;background:#f0f4fb;font-size:12px;font-weight:700;color:#1b3a6b">Candidate</td><td style="padding:10px 14px;font-size:13px">'+esc(cand.name||'')+'</td></tr>'+
+      '<tr><td style="padding:10px 14px;background:#f0f4fb;font-size:12px;font-weight:700;color:#1b3a6b">Date & Time</td><td style="padding:10px 14px;font-size:13px;font-weight:700">'+esc(sl.label||sl.date)+'</td></tr>'+
+      '<tr><td style="padding:10px 14px;background:#f0f4fb;font-size:12px;font-weight:700;color:#1b3a6b">Format</td><td style="padding:10px 14px;font-size:13px">'+esc(sl.format||'Video')+'</td></tr>'+
+      '</table>'+
+      '<p style="font-size:13px;color:#555;line-height:1.6">Our team will share the meeting link / venue details shortly. Please contact us at info@opsisplacements.com for any queries.</p>'+
+      '<p style="font-size:12px;color:#999;margin-top:20px;text-align:center">Opsis Consulting India Pvt. Ltd. | 8123999977 | info@opsisplacements.com</p>'+
+      '</div></div></body></html>';
+    try{
+      emailjs.init('t4LYcYSryDAgwP0Iw');
+      emailjs.send('service_llgpy53','template_ofjfrbp',{to_email:shareData.client_email||shareData.auth_email||'',subject:'Interview Confirmed — '+esc(cand.name||'')+' | Opsis',message:emailBody,from_email:'info@opsisplacements.com',from_name:'Opsis Consulting India Pvt. Ltd.',reply_to:'info@opsisplacements.com'});
+      emailjs.send('service_llgpy53','template_ofjfrbp',{to_email:'info@opsisplacements.com',subject:'[CLIENT CONFIRMED] '+esc(cand.name||'')+' — '+(shareData.client_company||''),message:emailBody,from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'});
+    }catch(e){}
+    renderPortal();
+  }catch(e){alert('Could not save. Please try again.');}
 }
 
 function ts(id){var i=_sel.indexOf(id);if(i>-1)_sel.splice(i,1);else _sel.push(id);renderPortal();}
@@ -323,7 +381,93 @@ async function subSlots(){if(!_sel.length){alert('Please select at least one slo
 
 function renderSlotsDone(el){el.innerHTML='<div class="card"><div class="card-body" style="text-align:center;padding:48px"><div style="font-size:48px;margin-bottom:16px">📅</div><div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">Interviews Scheduled</div><div style="font-size:13px;color:var(--grey);line-height:1.6">Your preferred slots are confirmed. Calendar invites will follow shortly.</div></div></div>'+nrHtml();}
 
-function renderOffer(el){el.innerHTML='<div class="card"><div class="card-hd"><h2>📋 Offer Stage</h2></div><div class="card-body"><div class="al ai">Offer extended. Please confirm once the candidate accepts and joining date is agreed.</div></div></div>'+nrHtml();}
+function renderOffer(el){
+  var cands=(shareData.candidates||[]).filter(function(c){return c.pipelineStatus==='offer_extended';});
+  var html='<div class="card"><div class="card-hd"><h2>📋 Offer Extended</h2><p>Please review and confirm joining for the candidate(s) below</p></div><div class="card-body">'+
+    '<div class="al ai">An offer has been extended. Kindly confirm once the candidate accepts and the joining date is finalised.</div></div></div>';
+  cands.forEach(function(c,i){
+    var od=c.offerData||{};var joined=c.pipelineStatus==='joined';
+    var fmtD2=function(d){try{return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});}catch(e){return d||'—';}};
+    html+='<div class="card"><div class="card-hd"><h2>'+esc(c.name||'Candidate')+'</h2>'+
+      (od.designation?'<p>'+esc(od.designation)+'</p>':'')+
+      '</div><div class="card-body">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+
+      '<div class="chip"><div class="chip-l">💰 Offered CTC</div><div class="chip-v" style="color:var(--ok)">'+esc(od.ctc||'—')+'</div></div>'+
+      '<div class="chip"><div class="chip-l">📅 Proposed Joining</div><div class="chip-v">'+fmtD2(od.joinDate)+'</div></div>'+
+      (od.validUntil?'<div class="chip"><div class="chip-l">⏳ Offer Valid Until</div><div class="chip-v">'+fmtD2(od.validUntil)+'</div></div>':'')+
+      '</div>'+
+      (od.notes?'<div style="font-size:12px;color:var(--grey);padding:10px;background:#f9f7f4;border-radius:6px;margin-bottom:16px">📌 '+esc(od.notes)+'</div>':'')+
+      (joined?'<div class="al ao">✅ Joining confirmed on '+fmtD2(c.joiningDate)+'</div>':
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn bp" onclick="confJoining(''+esc(c.id||c.name)+'','+i+')" style="flex:1">✅ Confirm Joining</button>'+
+        '<button class="btn bo" onclick="discussOffer('+i+')" style="flex:1">💬 Discuss</button>'+
+        '</div>'+
+        '<div id="jdPicker'+i+'" style="display:none;margin-top:12px">'+
+        '<label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Confirmed Joining Date</label>'+
+        '<input type="date" id="jDate'+i+'" style="width:100%;padding:9px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;margin-bottom:8px">'+
+        '<button class="btn bp" onclick="saveJoining(''+esc(c.id||c.name)+'','+i+')">Confirm & Submit →</button></div>')+
+      '</div></div>';
+  });
+  if(!cands.length)html+='<div class="card"><div class="card-body" style="text-align:center;padding:32px;color:var(--grey)">Offer details will appear here once extended.</div></div>';
+  el.innerHTML=html+nrHtml();
+}
+
+function confJoining(id,i){
+  document.getElementById('jdPicker'+i).style.display='block';
+}
+
+function discussOffer(i){
+  window.location.href='mailto:info@opsisplacements.com?subject=Query: Offer Discussion&body=Dear Opsis Team,
+
+I would like to discuss the offer details.
+
+Regards';
+}
+
+async function saveJoining(id,i){
+  var dateEl=document.getElementById('jDate'+i);
+  if(!dateEl||!dateEl.value){alert('Please select the joining date.');return;}
+  var joiningDate=dateEl.value;
+  var cands=shareData.candidates||[];
+  var cand=cands.find(function(c){return c.id===id||c.name===id;});
+  if(!cand)return;
+  var fmtD2=function(d){try{return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});}catch(e){return d;}};
+  cand.pipelineStatus='joined';cand.joiningDate=joiningDate;shareData.candidates=cands;
+  try{
+    await sb.from('client_shares').update({candidates:cands}).eq('token',token);
+    // Send joining confirmation email to client + BCC info@
+    var html2='<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">'+
+      '<div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;overflow:hidden">'+
+      '<div style="background:#1b3a6b;padding:20px 24px"><h2 style="color:#fff;margin:0;font-size:16px">OPSIS CONSULTING INDIA PVT. LTD.</h2>'+
+      '<p style="color:rgba(255,255,255,.6);margin:4px 0 0;font-size:11px">Joining Confirmed</p></div>'+
+      '<div style="padding:24px">'+
+      '<p style="color:#333;font-size:14px;margin:0 0 16px">Dear '+esc(shareData.client_company||'Sir/Madam')+',</p>'+
+      '<p style="color:#333;font-size:14px;margin:0 0 16px;line-height:1.6">'+
+      'We are delighted to confirm that <strong>'+esc(cand.name||'the candidate')+'</strong> will be joining your organisation on <strong>'+fmtD2(joiningDate)+'</strong>.</p>'+
+      '<div style="background:#d1fae5;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center">'+
+      '<div style="font-size:24px;margin-bottom:8px">🎉</div>'+
+      '<div style="font-size:16px;font-weight:700;color:#065f46">Joining Date: '+fmtD2(joiningDate)+'</div></div>'+
+      '<p style="font-size:13px;color:#555;line-height:1.6">Thank you for placing your trust in Opsis Consulting. We wish '+esc(cand.name||'the candidate')+' a successful and rewarding journey with your team!</p>'+
+      '<p style="font-size:12px;color:#999;margin-top:20px;text-align:center">Opsis Consulting India Pvt. Ltd. | 8123999977 | info@opsisplacements.com</p>'+
+      '</div></div></body></html>';
+    try{
+      emailjs.init('t4LYcYSryDAgwP0Iw');
+      emailjs.send('service_llgpy53','template_ofjfrbp',{
+        to_email:shareData.client_email||shareData.auth_email||'',
+        subject:'Joining Confirmed — '+esc(cand.name||'')+(shareData.client_company?' | '+shareData.client_company:''),
+        message:html2,from_email:'info@opsisplacements.com',
+        from_name:'Opsis Consulting India Pvt. Ltd.',reply_to:'info@opsisplacements.com'
+      });
+      emailjs.send('service_llgpy53','template_ofjfrbp',{
+        to_email:'info@opsisplacements.com',
+        subject:'[JOINED] '+esc(cand.name||'')+' — '+esc(shareData.client_company||''),
+        message:html2,from_email:'info@opsisplacements.com',
+        from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'
+      });
+    }catch(e){}
+    renderPortal();
+  }catch(e){alert('Could not save. Please try again.');}
+}
 
 function renderDone(el){el.innerHTML='<div class="card"><div class="card-body" style="text-align:center;padding:48px"><div style="font-size:48px;margin-bottom:16px">🎉</div><div style="font-size:20px;font-weight:800;color:var(--ok);margin-bottom:8px">Placement Complete!</div><div style="font-size:13px;color:var(--grey);line-height:1.6">Thank you for partnering with Opsis Consulting!</div></div></div>'+nrHtml();}
 
