@@ -5,47 +5,49 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Opsis Client Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.emailjs.com/dist/email.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--navy:#1b3a6b;--gold:#c9a84c;--cream:#f9f7f4;--dark:#1a1916;--grey:#5c5a52;--lgrey:#e8e4da;--ok:#059669;--warn:#d97706;--err:#dc2626;--blue:#2563eb}
 body{font-family:'Segoe UI',Arial,sans-serif;background:var(--cream);min-height:100vh}
 .hdr{background:var(--navy);position:sticky;top:0;z-index:100}
-.hdr-inner{display:flex;align-items:center;gap:14px;padding:14px 20px;max-width:900px;margin:auto}
-.logo{width:36px;height:36px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--navy)}
+.hi{display:flex;align-items:center;gap:14px;padding:14px 20px;max-width:900px;margin:auto}
+.lo{width:36px;height:36px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--navy)}
 .hdr h1{font-size:15px;font-weight:700;color:#fff}
 .hdr p{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
-.gold-bar{height:3px;background:linear-gradient(90deg,var(--gold),#e8c872,var(--gold))}
-.stage-bar{background:#fff;border-bottom:1px solid var(--lgrey);overflow-x:auto}
-.si{display:flex;max-width:900px;margin:auto;padding:0 16px}
+.gb{height:3px;background:linear-gradient(90deg,var(--gold),#e8c872,var(--gold))}
+.sb{background:#fff;border-bottom:1px solid var(--lgrey);overflow-x:auto}
+.sbi{display:flex;max-width:900px;margin:auto;padding:0 16px}
 .ss{display:flex;align-items:center;gap:7px;padding:11px 14px;font-size:12px;font-weight:600;color:var(--grey);white-space:nowrap;border-bottom:2px solid transparent}
 .ss.done{color:var(--ok)}.ss.active{color:var(--navy);border-bottom-color:var(--navy)}
 .ss .dot{width:18px;height:18px;border-radius:50%;background:var(--lgrey);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800}
 .ss.done .dot{background:var(--ok);color:#fff}.ss.active .dot{background:var(--navy);color:#fff}
 .main{max-width:900px;margin:0 auto;padding:24px 20px 80px}
 .card{background:#fff;border-radius:12px;border:1px solid var(--lgrey);margin-bottom:16px;overflow:hidden}
-.card-hd{padding:16px 20px;border-bottom:1px solid var(--lgrey)}
-.card-hd h2{font-size:15px;font-weight:700;color:var(--navy)}
-.card-hd p{font-size:12px;color:var(--grey);margin-top:3px}
-.card-body{padding:20px}
-.cand-card{border:1px solid var(--lgrey);border-radius:10px;margin-bottom:12px;overflow:hidden}
-.cand-hd{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
+.ch{padding:16px 20px;border-bottom:1px solid var(--lgrey)}
+.ch h2{font-size:15px;font-weight:700;color:var(--navy)}
+.ch p{font-size:12px;color:var(--grey);margin-top:3px}
+.cb2{padding:20px}
+.cc{border:1px solid var(--lgrey);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.cc-hd{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
 .av{width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0}
-.cn{flex:1;min-width:0}.cn .n{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cn .s{font-size:11px;color:var(--grey);margin-top:2px}
-.cb{display:none;padding:0 16px 16px;border-top:1px solid var(--lgrey)}.cb.open{display:block}
+.cn2{flex:1;min-width:0}
+.cn2 .n{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cn2 .s{font-size:11px;color:var(--grey);margin-top:2px}
+.cc-bd{display:none;padding:0 16px 16px;border-top:1px solid var(--lgrey)}.cc-bd.open{display:block}
 .fb-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .fb{flex:1;min-width:110px;padding:9px;border-radius:8px;border:1.5px solid var(--lgrey);background:#fff;font-size:13px;font-weight:600;cursor:pointer}
 .fb.i{border-color:var(--ok);color:var(--ok)}.fb.i.a{background:var(--ok);color:#fff}
 .fb.n{border-color:var(--err);color:var(--err)}.fb.n.a{background:var(--err);color:#fff}
 .fb.h{border-color:var(--warn);color:var(--warn)}.fb.h.a{background:var(--warn);color:#fff}
-.uz{border:2px dashed var(--lgrey);border-radius:10px;padding:32px;text-align:center;cursor:pointer}
-.uz:hover{border-color:var(--navy);background:#f0f4fb}
+.uz{border:2px dashed var(--lgrey);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .2s}
+.uz:hover,.uz.drag{border-color:var(--navy);background:#f0f4fb}
 .qf .fl{margin-bottom:14px}
 .qf label{font-size:12px;font-weight:600;color:var(--grey);display:block;margin-bottom:4px}
 .qf input,.qf select,.qf textarea{width:100%;padding:10px 12px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;font-family:inherit}
 .qf textarea{min-height:80px;resize:vertical}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none}
+.btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
 .bp{background:var(--navy);color:#fff}.bo{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
 .bsm{padding:7px 14px;font-size:12px}
 .al{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:12px}
@@ -55,8 +57,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--cream);min-height:
 .chip-l{font-size:10px;color:var(--grey);font-weight:600}
 .chip-v{font-size:13px;font-weight:600;margin-top:2px}
 .nr{background:#f0f4fb;border-radius:10px;padding:16px;margin-top:20px;border:1px solid #bfdbfe}
-.spin{width:32px;height:32px;border:3px solid var(--lgrey);border-top-color:var(--navy);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 12px}
-@keyframes sp{to{transform:rotate(360deg)}}
+.slot-opt{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--lgrey);border-radius:8px;margin-bottom:8px;cursor:pointer;background:#fff;transition:all .2s}
+.slot-opt.sel{border-color:var(--navy);background:#eff6ff}
 .ww{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--cream)}
 .wc{background:#fff;border-radius:16px;padding:36px 32px;max-width:420px;width:100%;border:1px solid var(--lgrey);text-align:center}
 .wl{width:60px;height:60px;background:var(--navy);border-radius:14px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:var(--gold)}
@@ -67,33 +69,30 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--cream);min-height:
 </head>
 <body>
 
-<!-- Welcome (shown by default) -->
 <div id="W" class="ww">
   <div class="wc">
     <div class="wl">OC</div>
     <h2 id="wCo" style="font-size:20px;color:var(--navy);margin-bottom:8px">Opsis Client Portal</h2>
     <p id="wPo" style="font-size:13px;color:var(--grey);margin-bottom:6px">Recruitment Portal</p>
-    <p style="font-size:12px;color:var(--grey);line-height:1.6;margin-bottom:24px">Your dedicated recruitment portal from Opsis Consulting. Access your JD form, review candidates, schedule interviews, and track your placement — all in one place.</p>
-    <div id="wMsg" style="font-size:13px;color:var(--grey);margin-bottom:12px;min-height:20px"></div>
-    <button id="enterBtn" class="btn bp" style="width:100%;padding:14px;font-size:15px" onclick="doEnter()">Enter Portal →</button>
-    <p style="font-size:11px;color:var(--grey);margin-top:16px">📞 8123999977 | ✉ info@opsisplacements.com</p>
+    <p style="font-size:12px;color:var(--grey);line-height:1.6;margin-bottom:24px">Your dedicated recruitment portal. Submit JDs, review candidates, confirm interviews, and track your placement — all in one place.</p>
+    <div id="wMsg" style="font-size:12px;color:var(--grey);margin-bottom:12px;min-height:18px"></div>
+    <button class="btn bp" style="width:100%;padding:14px;font-size:15px" onclick="doEnter()">Enter Portal →</button>
+    <p style="font-size:11px;color:var(--grey);margin-top:16px">📞 8123999977 &nbsp;|&nbsp; ✉ info@opsisplacements.com</p>
   </div>
 </div>
 
-<!-- Portal -->
 <div id="P" style="display:none">
   <div class="hdr">
-    <div class="hdr-inner">
-      <div class="logo">OC</div>
+    <div class="hi">
+      <div class="lo">OC</div>
       <div><h1 id="hCo">Opsis Client Portal</h1><p id="hSu">Opsis Consulting India Pvt. Ltd.</p></div>
     </div>
-    <div class="gold-bar"></div>
+    <div class="gb"></div>
   </div>
-  <div class="stage-bar"><div class="si" id="SB"></div></div>
+  <div class="sb"><div class="sbi" id="SB"></div></div>
   <div class="main" id="MC"></div>
 </div>
 
-<!-- Error -->
 <div id="E" style="display:none">
   <div class="ew"><div class="ec">
     <div style="font-size:40px;margin-bottom:16px">🔗</div>
@@ -104,48 +103,47 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--cream);min-height:
 </div>
 
 <script>
-const SURL='https://zpywagmjesyzhedqnoch.supabase.co';
-const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpweXdhZ21qZXN5emhlZHFub2NoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MTA4ODQsImV4cCI6MjA5NzI4Njg4NH0.x64oLcwqZPZZIqj35Ld9JG06XP7bKt3SMdrADcG1dJc';
-const sb=supabase.createClient(SURL,SKEY);
-const token=new URLSearchParams(location.search).get('token');
-let shareData=null;
-let _nrMode='',_nrFiles=[],_files=[];
+var SURL='https://zpywagmjesyzhedqnoch.supabase.co';
+var SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpweXdhZ21qZXN5emhlZHFub2NoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3MTA4ODQsImV4cCI6MjA5NzI4Njg4NH0.x64oLcwqZPZZIqj35Ld9JG06XP7bKt3SMdrADcG1dJc';
+var sb=supabase.createClient(SURL,SKEY);
+var EJS_SVC='service_llgpy53',EJS_TPL='template_ofjfrbp',EJS_KEY='t4LYcYSryDAgwP0Iw';
+emailjs.init(EJS_KEY);
+
+var token=new URLSearchParams(location.search).get('token');
+var shareData=null;
+var _files=[],_nrFiles=[],_candSel={};
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function sw(id){['W','P','E'].forEach(function(x){document.getElementById(x).style.display='none';});document.getElementById(id).style.display='block';}
 function setMsg(t){var e=document.getElementById('wMsg');if(e)e.textContent=t;}
 
-// Load data in background on page load
 window.addEventListener('load',function(){
   if(!token){return;}
-  setMsg('Connecting to your portal…');
+  setMsg('Connecting…');
   sb.from('client_shares').select('*').eq('token',token).maybeSingle().then(function(r){
-    if(r.data){
+    if(r&&r.data){
       shareData=r.data;shareData._source='client_shares';shareData.action_log=shareData.action_log||[];
       document.getElementById('wCo').textContent=shareData.client_company||'Welcome';
       document.getElementById('wPo').textContent=(shareData.position_title||'Recruitment Portal')+' — Opsis Consulting';
-      setMsg('✅ Portal ready. Click to enter.');
+      setMsg('✅ Portal ready.');
     } else {
       sb.from('jd_requests').select('*').eq('token',token).maybeSingle().then(function(r2){
-        if(r2.data){
+        if(r2&&r2.data){
           shareData=r2.data;shareData._source='jd_requests';shareData.stage='jd_pending';
           document.getElementById('wCo').textContent=shareData.client_company||'Welcome';
-          setMsg('✅ Portal ready. Click to enter.');
+          setMsg('✅ Portal ready.');
         } else {
           shareData={_source:'new',stage:'jd_pending',client_company:'',positions:[],token:token};
-          setMsg('✅ Connected. Click to enter.');
+          setMsg('');
         }
-      }).catch(function(){shareData={_source:'new',stage:'jd_pending',client_company:'',positions:[],token:token};setMsg('Click to enter your portal.');});
+      }).catch(function(){shareData={_source:'new',stage:'jd_pending',client_company:'',positions:[],token:token};setMsg('');});
     }
-  }).catch(function(){
-    shareData={_source:'new',stage:'jd_pending',client_company:'',positions:[],token:token};
-    setMsg('Click to enter your portal.');
-  });
+  }).catch(function(){shareData={_source:'new',stage:'jd_pending',client_company:'',positions:[],token:token};setMsg('');});
 });
 
 function doEnter(){
   if(!token){sw('E');return;}
-  if(!shareData){setMsg('Still loading… please wait 2 seconds and try again.');return;}
+  if(!shareData){setMsg('Loading… please wait 2 seconds and try again.');return;}
   document.getElementById('hCo').textContent=shareData.client_company||'Client Portal';
   document.getElementById('hSu').textContent=(shareData.position_title||'Open Positions')+' — Opsis Consulting India Pvt. Ltd.';
   sw('P');
@@ -158,17 +156,21 @@ function getStage(){
   var c=shareData.candidates||[],st=shareData.status||'';
   if(!c.length)return shareData.jd_submitted?'jd_received':'jd_pending';
   var hasJ=c.some(function(x){return x.pipelineStatus==='joined';});
-  var hasO=c.some(function(x){return x.pipelineStatus==='offer_extended'||x.pipelineStatus==='offer_issued';});
+  var hasO=c.some(function(x){return x.pipelineStatus==='offer_extended';});
   var sOk=st==='slots_submitted'||st==='slots_imported';
+  var hasSlots=c.some(function(x){return x.interview_slots&&x.interview_slots.length;});
   var allM=c.every(function(x){return x.interestStatus==='interested'||x.interestStatus==='not_interested';});
   var hasI=c.some(function(x){return x.interestStatus==='interested';});
-  if(hasJ)return 'done';if(hasO)return 'offer';if(sOk)return 'slotsdone';
-  if(allM&&hasI)return 'slots';return 'cands';
+  if(hasJ)return 'done';
+  if(hasO)return 'offer';
+  if(sOk||hasSlots)return 'slots';
+  if(allM&&hasI)return 'cands';
+  return 'cands';
 }
 
 function renderSB(cur){
   var ss=[{k:'jd_pending',l:'Share JD',i:'📄'},{k:'cands',l:'Review CVs',i:'👥'},{k:'slots',l:'Schedule',i:'📅'},{k:'offer',l:'Offer',i:'📋'},{k:'done',l:'Joined',i:'✅'}];
-  var order=ss.map(function(s){return s.k;});
+  var order=['jd_pending','cands','slots','offer','done'];
   var ci=Math.max(0,order.indexOf(cur));
   document.getElementById('SB').innerHTML=ss.map(function(s,i){
     var cl=i<ci?'done':i===ci?'active':'';
@@ -178,36 +180,36 @@ function renderSB(cur){
 }
 
 function renderPortal(){
-  var stage=getStage();renderSB(stage);var el=document.getElementById('MC');
+  var stage=getStage();renderSB(stage);
+  var el=document.getElementById('MC');
   if(stage==='jd_pending')renderJD(el);
   else if(stage==='jd_received')renderJDRec(el);
   else if(stage==='cands')renderCands(el);
   else if(stage==='slots')renderSlots(el);
-  else if(stage==='slotsdone')renderSlotsDone(el);
   else if(stage==='offer')renderOffer(el);
   else if(stage==='done')renderDone(el);
   else renderJD(el);
 }
 
-// ── STAGE 1: JD ──────────────────────────────────────────────
+/* ── STAGE 1: JD ─────────────────────────────────────────── */
 function renderJD(el){
   var pos=shareData.positions||[];
-  el.innerHTML='<div class="card"><div class="card-hd"><h2>📄 Share Your Job Description</h2><p>Help us find the right candidates</p></div><div class="card-body">'+
-  (pos.length?'<div style="margin-bottom:16px">'+pos.map(function(p){return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--lgrey)"><span>📌</span><div><strong style="font-size:13px">'+esc(p.title||'Position')+'</strong><span style="font-size:11px;color:var(--grey);margin-left:8px">'+(p.openings||1)+' opening(s)</span></div></div>';}).join('')+'</div>':'')+
+  el.innerHTML='<div class="card"><div class="ch"><h2>📄 Share Your Job Description</h2><p>Help us find the right candidates</p></div><div class="cb2">'+
+  (pos.length?'<div style="margin-bottom:16px">'+pos.map(function(p){return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--lgrey)"><span>📌</span><strong style="font-size:13px">'+esc(p.title||'Position')+'</strong><span style="font-size:11px;color:var(--grey);margin-left:8px">'+(p.openings||1)+' opening(s)</span></div>';}).join('')+'</div>':'')+
   '<div class="g2" style="margin-bottom:20px">'+
   '<button onclick="setM(\'u\')" id="mU" class="btn bo" style="padding:18px;border-radius:10px;text-align:center">📎<br><strong>Upload JD</strong><br><span style="font-size:11px;color:var(--grey);font-weight:400">PDF, Word, image</span></button>'+
   '<button onclick="setM(\'f\')" id="mF" class="btn bo" style="padding:18px;border-radius:10px;text-align:center">📝<br><strong>Quick Form</strong><br><span style="font-size:11px;color:var(--grey);font-weight:400">2 minutes</span></button></div>'+
   '<div id="US" style="display:none">'+
-  '<div class="uz" onclick="document.getElementById(\'fi\').click()" ondragover="event.preventDefault();this.classList.add(\'drag\')" ondragleave="this.classList.remove(\'drag\')" ondrop="handleDrop(event)">'+
-  '<div style="font-size:32px;margin-bottom:8px">☁️</div><div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:4px">Click to upload or drag & drop</div>'+
-  '<div style="font-size:12px;color:var(--grey)">PDF, DOCX, PNG, JPG</div></div>'+
-  '<input type="file" id="fi" accept=".pdf,.docx,.doc,.png,.jpg" multiple style="display:none" onchange="handleFiles(this.files)">'+
+  '<div class="uz" onclick="document.getElementById(\'fi\').click()" ondragover="event.preventDefault();this.classList.add(\'drag\')" ondragleave="this.classList.remove(\'drag\')" ondrop="hDrop(event)">'+
+  '<div style="font-size:32px;margin-bottom:8px">☁️</div><div style="font-size:14px;font-weight:600;color:var(--navy)">Click or drag & drop</div>'+
+  '<div style="font-size:12px;color:var(--grey);margin-top:4px">PDF, DOCX, PNG, JPG</div></div>'+
+  '<input type="file" id="fi" accept=".pdf,.docx,.doc,.png,.jpg" multiple style="display:none" onchange="hFiles(this.files)">'+
   '<div id="FL" style="margin-top:12px"></div>'+
-  '<textarea id="uN" placeholder="Additional notes, budget, urgency…" style="width:100%;padding:10px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;margin-top:12px;min-height:60px;font-family:inherit"></textarea>'+
-  '<button class="btn bp" onclick="subUpload()" style="width:100%;margin-top:12px">Submit Job Description →</button></div>'+
+  '<textarea id="uN" placeholder="Notes, budget, urgency…" style="width:100%;padding:10px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;margin-top:12px;min-height:60px;font-family:inherit;resize:vertical"></textarea>'+
+  '<button class="btn bp" onclick="sUpload()" style="width:100%;margin-top:12px">Submit Job Description →</button></div>'+
   '<div id="FS" style="display:none"><div class="qf">'+
   (pos.length?pos.map(function(p,i){return fPos(p,i);}).join(''):fPos({},0))+
-  '</div><button class="btn bp" onclick="subForm()" style="width:100%">Submit Job Description →</button></div>'+
+  '</div><button class="btn bp" onclick="sForm()" style="width:100%">Submit Job Description →</button></div>'+
   '<div id="jdOK" style="display:none;text-align:center;padding:32px"><div style="font-size:40px;margin-bottom:12px">✅</div><div style="font-size:16px;font-weight:700;color:var(--ok)">JD Received! We\'ll be in touch soon.</div></div>'+
   '</div></div>'+nrHtml();
 }
@@ -222,7 +224,7 @@ function fPos(p,i){
   '<div class="fl"><label>CTC Budget</label><input id="jc'+i+'" placeholder="e.g. 6-10 LPA"></div>'+
   '<div class="fl"><label>Location</label><input id="jl'+i+'" placeholder="e.g. Bengaluru"></div></div>'+
   '<div class="fl" style="margin-top:4px"><label>Key Skills / Responsibilities</label>'+
-  '<textarea id="js'+i+'" placeholder="Required skills, tools, responsibilities…"></textarea></div></div>';
+  '<textarea id="js'+i+'" placeholder="Skills, tools, responsibilities…"></textarea></div></div>';
 }
 
 function setM(m){
@@ -232,65 +234,65 @@ function setM(m){
   if(a){a.style.background=m==='u'?'var(--navy)':'';a.style.color=m==='u'?'#fff':'';}
   if(b){b.style.background=m==='f'?'var(--navy)':'';b.style.color=m==='f'?'#fff':'';}
 }
-
-function handleFiles(files){Array.from(files).forEach(function(f){_files.push(f);});renderFL();}
-function handleDrop(e){e.preventDefault();document.querySelector('.uz').classList.remove('drag');handleFiles(e.dataTransfer.files);}
+function hFiles(files){Array.from(files).forEach(function(f){_files.push(f);});renderFL();}
+function hDrop(e){e.preventDefault();document.querySelector('.uz').classList.remove('drag');hFiles(e.dataTransfer.files);}
 function renderFL(){var el=document.getElementById('FL');if(el)el.innerHTML=_files.map(function(f,i){return '<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#f0f4fb;border-radius:6px;margin-bottom:6px">📄 <span style="flex:1;font-size:13px">'+esc(f.name)+'</span><button onclick="_files.splice('+i+',1);renderFL()" style="background:none;border:none;color:var(--err);cursor:pointer;font-size:16px">×</button></div>';}).join('');}
 
-async function subUpload(){
+function sUpload(){
   if(!_files.length){alert('Please select at least one file.');return;}
-  await saveJD({type:'upload',files:_files.map(function(f){return f.name;}),notes:(document.getElementById('uN')&&document.getElementById('uN').value)||''});
+  saveJD({type:'upload',files:_files.map(function(f){return f.name;}),notes:document.getElementById('uN')&&document.getElementById('uN').value||''});
 }
-
-async function subForm(){
+function sForm(){
   var pos=shareData.positions||[{}];
   var forms=pos.map(function(p,i){
     var g=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
     return{title:g('jt'+i),openings:g('jo'+i),mode:g('jm'+i),experience:g('je'+i),ctc:g('jc'+i),location:g('jl'+i),skills:g('js'+i)};
   });
   if(!forms[0].title){alert('Please enter the job title.');return;}
-  await saveJD({type:'form',positions:forms});
+  saveJD({type:'form',positions:forms});
 }
-
-async function saveJD(data){
-  try{
-    if(shareData._source==='jd_requests'){
-      await sb.from('jd_requests').update({status:'submitted',submitted_data:data,submitted_at:new Date().toISOString()}).eq('token',token);
-    } else {
-      await sb.from('client_shares').update({jd_submitted:true,jd_data:data,stage:'jd_received'}).eq('token',token);
-    }
-    document.getElementById('US').style.display='none';
-    document.getElementById('FS').style.display='none';
-    document.getElementById('jdOK').style.display='block';
+function saveJD(data){
+  var p=shareData._source==='jd_requests'?
+    sb.from('jd_requests').update({status:'submitted',submitted_data:data,submitted_at:new Date().toISOString()}).eq('token',token):
+    sb.from('client_shares').update({jd_submitted:true,jd_data:data,stage:'jd_received'}).eq('token',token);
+  p.then(function(){
+    shareData.jd_submitted=true;
+    document.getElementById('US')&&(document.getElementById('US').style.display='none');
+    document.getElementById('FS')&&(document.getElementById('FS').style.display='none');
+    document.getElementById('jdOK')&&(document.getElementById('jdOK').style.display='block');
     renderSB('jd_received');
-  }catch(e){alert('Submission failed. Please email info@opsisplacements.com');}
+    try{emailjs.send(EJS_SVC,EJS_TPL,{to_email:'info@opsisplacements.com',subject:'JD Received: '+(shareData.client_company||'Client'),message:'<p>JD received from <strong>'+(shareData.client_company||'')+'</strong>.</p><p>Type: '+(data.type==='upload'?'File upload':'Quick Form')+'</p>',from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'});}catch(e){}
+  }).catch(function(){alert('Submission failed. Please email info@opsisplacements.com');});
 }
 
-function renderJDRec(el){el.innerHTML='<div class="card"><div class="card-body" style="text-align:center;padding:48px"><div style="font-size:48px;margin-bottom:16px">🔍</div><div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">Screening in Progress</div><div style="font-size:13px;color:var(--grey);line-height:1.6">We have received your requirements and are sourcing candidates. Shortlisted profiles will appear here soon.</div></div></div>'+nrHtml();}
+/* ── STAGE: JD RECEIVED ─────────────────────────────────── */
+function renderJDRec(el){el.innerHTML='<div class="card"><div class="cb2" style="text-align:center;padding:48px"><div style="font-size:48px;margin-bottom:16px">🔍</div><div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">Screening in Progress</div><div style="font-size:13px;color:var(--grey);line-height:1.6">We have received your requirements and are sourcing candidates. Shortlisted profiles will appear here soon.</div></div></div>'+nrHtml();}
 
-// ── STAGE 2: CANDIDATES ───────────────────────────────────────
+/* ── STAGE 2: CANDIDATES ────────────────────────────────── */
 function renderCands(el){
-  var c=shareData.candidates||[];if(!c.length){renderJDRec(el);return;}
-  var tot=c.length,int=c.filter(function(x){return x.interestStatus==='interested';}).length,pend=tot-int-c.filter(function(x){return x.interestStatus==='not_interested';}).length;
-  el.innerHTML='<div class="card"><div class="card-hd"><h2>👥 Review Shortlisted Candidates</h2><p>Mark your interest — we will schedule interviews for the candidates you select</p></div><div class="card-body">'+
+  var c=shareData.candidates||[];
+  if(!c.length){renderJDRec(el);return;}
+  var tot=c.length,int=c.filter(function(x){return x.interestStatus==='interested';}).length,
+    pend=tot-int-c.filter(function(x){return x.interestStatus==='not_interested';}).length;
+  el.innerHTML='<div class="card"><div class="ch"><h2>👥 Review Shortlisted Candidates</h2><p>Mark your interest — we will schedule interviews for selected candidates</p></div><div class="cb2">'+
   '<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">'+
   '<div style="flex:1;min-width:70px;text-align:center;background:#f0f4fb;border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--navy)">'+tot+'</div><div style="font-size:11px;color:var(--grey)">Shared</div></div>'+
   '<div style="flex:1;min-width:70px;text-align:center;background:#d1fae5;border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--ok)">'+int+'</div><div style="font-size:11px;color:var(--ok)">Interested</div></div>'+
   '<div style="flex:1;min-width:70px;text-align:center;background:#fffbeb;border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--warn)">'+pend+'</div><div style="font-size:11px;color:var(--warn)">Pending</div></div></div>'+
-  (pend?'<div class="al ai">📌 Please review all '+tot+' candidates and mark your interest.</div>':int?'<div class="al ao">✅ All reviewed! We will proceed with interview scheduling for '+int+' candidate(s).</div>':'')+
+  (pend?'<div class="al ai">📌 Please review all '+tot+' candidates and mark your interest.</div>':
+  int?'<div class="al ao">✅ All reviewed! Proceeding with interview scheduling.</div>':'')+
   '</div></div>'+c.map(function(x,i){return candCard(x,i);}).join('')+nrHtml();
 }
-
 function candCard(c,i){
   var sc={interested:['#d1fae5','var(--ok)','Interested ✓'],not_interested:['#fee2e2','var(--err)','Not a Fit'],hold:['#fffbeb','var(--warn)','On Hold']}[c.interestStatus]||['var(--lgrey)','var(--grey)','Pending'];
   var ini=(c.name||'C').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
   var bg=['#1b3a6b','#2a5298','#34499e'][i%3];
-  return '<div class="cand-card"><div class="cand-hd" onclick="document.getElementById(\'cb'+i+'\').classList.toggle(\'open\')">'+
+  return '<div class="cc"><div class="cc-hd" onclick="var b=document.getElementById(\'ccb'+i+'\');b.classList.toggle(\'open\')">'+
   '<div class="av" style="background:'+bg+'">'+ini+'</div>'+
-  '<div class="cn"><div class="n">'+esc(c.name||'Candidate '+(i+1))+'</div>'+
+  '<div class="cn2"><div class="n">'+esc(c.name||'Candidate '+(i+1))+'</div>'+
   '<div class="s">'+esc(c.currentRole||'')+(c.currentCompany?' · '+esc(c.currentCompany):'')+'</div></div>'+
   '<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:'+sc[0]+';color:'+sc[1]+'">'+sc[2]+'</span><span style="color:var(--grey);margin-left:6px">▾</span></div>'+
-  '<div class="cb" id="cb'+i+'">'+
+  '<div class="cc-bd" id="ccb'+i+'">'+
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">'+
   [['💼','Experience',c.experience||'—'],['💰','Current CTC',c.currentCTC||'—'],['🎯','Expected',c.expectedCTC||'—'],['📅','Notice',c.noticePeriod||'—'],['📍','Location',c.location||'—'],['🎓','Qualification',c.qualification||'—']].map(function(s){return '<div class="chip"><div class="chip-l">'+s[0]+' '+s[1]+'</div><div class="chip-v">'+esc(s[2])+'</div></div>';}).join('')+'</div>'+
   (c.summary?'<div style="font-size:12px;color:var(--grey);line-height:1.6;margin-bottom:12px;background:var(--cream);padding:10px;border-radius:6px">'+esc(c.summary)+'</div>':'')+
@@ -300,196 +302,138 @@ function candCard(c,i){
   '<button class="fb h'+(c.interestStatus==='hold'?' a':'')+'" onclick="markI('+i+',\'hold\')">⏸ Hold</button>'+
   '</div></div></div>';
 }
-
-async function markI(i,status){
+function markI(i,status){
   var c=shareData.candidates||[];if(!c[i])return;
   c[i].interestStatus=status;c[i].interestUpdatedAt=new Date().toISOString();shareData.candidates=c;
-  try{await sb.from('client_shares').update({candidates:c}).eq('token',token);renderPortal();}
-  catch(e){alert('Could not save. Try again.');}
+  sb.from('client_shares').update({candidates:c}).eq('token',token).then(function(){renderPortal();}).catch(function(){alert('Could not save. Try again.');});
 }
 
-// ── STAGES 3-5 ───────────────────────────────────────────────
+/* ── STAGE 3: INTERVIEW SLOTS ───────────────────────────── */
 function renderSlots(el){
   var cands=shareData.candidates||[];
-  var candsWithSlots=cands.filter(function(c){return c.interview_slots&&c.interview_slots.length;});
-  if(!candsWithSlots.length){
-    el.innerHTML='<div class="card"><div class="card-body" style="text-align:center;padding:48px"><div style="font-size:40px;margin-bottom:12px">📅</div><div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:8px">Interview Scheduling</div><div style="font-size:13px;color:var(--grey);line-height:1.6">Our team is coordinating interview slots. Options will appear here shortly.</div></div></div>'+nrHtml();return;
+  var cwS=cands.filter(function(c){return c.interview_slots&&c.interview_slots.length;});
+  if(!cwS.length){
+    el.innerHTML='<div class="card"><div class="cb2" style="text-align:center;padding:48px"><div style="font-size:40px;margin-bottom:12px">📅</div>'+
+    '<div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:8px">Interview Scheduling</div>'+
+    '<div style="font-size:13px;color:var(--grey);line-height:1.6">Our team is coordinating interview slots. Options will appear here shortly.</div></div></div>'+nrHtml();return;
   }
-  var html='<div class="card"><div class="card-hd"><h2>📅 Select Interview Slots</h2><p>Please confirm your preferred time for each candidate</p></div><div class="card-body"><div class="al ai">Select one slot per candidate below and click Confirm. We will send you a calendar invite.</div></div></div>';
-  candsWithSlots.forEach(function(c,ci){
+  window._swSlots=cwS; // Store for onclick access
+  var html='<div class="card"><div class="ch"><h2>📅 Select Interview Slots</h2><p>Please confirm your preferred interview time for each candidate</p></div>'+
+  '<div class="cb2"><div class="al ai">Select one slot per candidate and click Confirm. A calendar invite will follow.</div></div></div>';
+  cwS.forEach(function(c,ci){
     var confirmed=c.confirmedSlot;
-    html+='<div class="card"><div class="card-hd"><h2>'+esc(c.name||'Candidate')+'</h2><p>'+esc(c.currentRole||'')+(c.currentCompany?' · '+esc(c.currentCompany):'')+'</p></div><div class="card-body">';
+    html+='<div class="card"><div class="ch"><h2>'+esc(c.name||'Candidate')+'</h2><p>'+esc(c.currentRole||'')+(c.currentCompany?' · '+esc(c.currentCompany):'')+'</p></div><div class="cb2">';
     if(confirmed){
-      html+='<div class="al ao">✅ Slot confirmed: <strong>'+esc(confirmed.label||confirmed.date)+'</strong> ('+esc(confirmed.format)+')</div>';
+      html+='<div class="al ao">✅ Confirmed: <strong>'+esc(confirmed.label||confirmed.date)+'</strong> ('+esc(confirmed.format)+')</div>';
     } else {
-      (c.interview_slots||[]).forEach(function(sl){
-        var slId=String(sl.id||sl.date);var isSel=_candSel[ci]&&_candSel[ci].id===slId;
-        html+='<div onclick="selCandSlot('+ci+',''+slId+'','+JSON.stringify(sl).replace(/'/g,"\'")+')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid '+(isSel?'var(--navy)':'var(--lgrey)')+';border-radius:8px;margin-bottom:8px;cursor:pointer;background:'+(isSel?'#eff6ff':'#fff')+'">'+
+      (c.interview_slots||[]).forEach(function(sl,si){
+        var isSel=_candSel[ci]!==undefined&&_candSel[ci]===si;
+        html+='<div class="slot-opt'+(isSel?' sel':'')+'" onclick="pickSlot('+ci+','+si+')">'+
           '<span style="font-size:18px">'+(isSel?'✅':'🗓')+'</span>'+
           '<div><div style="font-size:13px;font-weight:600">'+esc(sl.label||fmtD(sl.date))+'</div>'+
           '<div style="font-size:11px;color:var(--grey)">'+esc(sl.format||'Video')+'</div></div></div>';
       });
-      if(c.slotNotes)html+='<div style="font-size:12px;color:var(--grey);margin-top:6px;padding:8px;background:#f9f7f4;border-radius:6px">📌 '+esc(c.slotNotes)+'</div>';
-      if(_candSel[ci])html+='<button class="btn bp" onclick="confCandSlot('+ci+')" style="width:100%;margin-top:12px">✅ Confirm This Slot →</button>';
+      if(c.slotNotes)html+='<div style="font-size:12px;color:var(--grey);padding:8px;background:#f9f7f4;border-radius:6px;margin-bottom:10px">📌 '+esc(c.slotNotes)+'</div>';
+      if(_candSel[ci]!==undefined){html+='<button class="btn bp" onclick="confSlot('+ci+')" style="width:100%;margin-top:10px">✅ Confirm This Slot →</button>';}
     }
     html+='</div></div>';
   });
   el.innerHTML=html+nrHtml();
 }
 
-var _candSel={};
-function selCandSlot(ci,slId,sl){_candSel[ci]={id:slId,sl:sl};renderPortal();}
+function pickSlot(ci,si){_candSel[ci]=si;renderPortal();}
 
-async function confCandSlot(ci){
+function confSlot(ci){
+  var cwS=window._swSlots||[];
+  var cand=cwS[ci];if(!cand||_candSel[ci]===undefined)return;
+  var sl=cand.interview_slots[_candSel[ci]];
   var cands=shareData.candidates||[];
-  var candsWithSlots=cands.filter(function(c){return c.interview_slots&&c.interview_slots.length;});
-  var cand=candsWithSlots[ci];if(!cand||!_candSel[ci])return;
-  var sl=_candSel[ci].sl;
-  // Find the actual candidate in shareData.candidates and update
   cands.forEach(function(c){if(c.name===cand.name){c.confirmedSlot=sl;c.interviewStatus='slot_confirmed';}});
   shareData.candidates=cands;
-  try{
-    await sb.from('client_shares').update({candidates:cands}).eq('token',token);
-    // Confirmation email
-    var fmtDate=function(d){try{return new Date(d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'long',year:'numeric'});}catch(e){return d;}};
-    var emailBody='<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">'+
-      '<div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;overflow:hidden">'+
-      '<div style="background:#1b3a6b;padding:20px 24px"><h2 style="color:#fff;margin:0;font-size:16px">OPSIS CONSULTING INDIA PVT. LTD.</h2>'+
-      '<p style="color:rgba(255,255,255,.6);margin:4px 0 0;font-size:11px">Interview Slot Confirmed</p></div>'+
-      '<div style="padding:24px">'+
-      '<p style="color:#333;font-size:14px;margin:0 0 16px">Dear '+esc(shareData.client_company||'Sir/Madam')+',</p>'+
-      '<p style="color:#333;font-size:14px;margin:0 0 16px;line-height:1.6">This confirms your interview slot selection for <strong>'+esc(cand.name||'')+'</strong>.</p>'+
-      '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;border:1px solid #e8e4da">'+
-      '<tr><td style="padding:10px 14px;background:#f0f4fb;font-size:12px;font-weight:700;color:#1b3a6b">Candidate</td><td style="padding:10px 14px;font-size:13px">'+esc(cand.name||'')+'</td></tr>'+
-      '<tr><td style="padding:10px 14px;background:#f0f4fb;font-size:12px;font-weight:700;color:#1b3a6b">Date & Time</td><td style="padding:10px 14px;font-size:13px;font-weight:700">'+esc(sl.label||sl.date)+'</td></tr>'+
-      '<tr><td style="padding:10px 14px;background:#f0f4fb;font-size:12px;font-weight:700;color:#1b3a6b">Format</td><td style="padding:10px 14px;font-size:13px">'+esc(sl.format||'Video')+'</td></tr>'+
-      '</table>'+
-      '<p style="font-size:13px;color:#555;line-height:1.6">Our team will share the meeting link / venue details shortly. Please contact us at info@opsisplacements.com for any queries.</p>'+
-      '<p style="font-size:12px;color:#999;margin-top:20px;text-align:center">Opsis Consulting India Pvt. Ltd. | 8123999977 | info@opsisplacements.com</p>'+
-      '</div></div></body></html>';
-    try{
-      emailjs.init('t4LYcYSryDAgwP0Iw');
-      emailjs.send('service_llgpy53','template_ofjfrbp',{to_email:shareData.client_email||shareData.auth_email||'',subject:'Interview Confirmed — '+esc(cand.name||'')+' | Opsis',message:emailBody,from_email:'info@opsisplacements.com',from_name:'Opsis Consulting India Pvt. Ltd.',reply_to:'info@opsisplacements.com'});
-      emailjs.send('service_llgpy53','template_ofjfrbp',{to_email:'info@opsisplacements.com',subject:'[CLIENT CONFIRMED] '+esc(cand.name||'')+' — '+(shareData.client_company||''),message:emailBody,from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'});
-    }catch(e){}
+  sb.from('client_shares').update({candidates:cands}).eq('token',token).then(function(){
+    var html2=buildConfEmail('Interview Confirmed','Interview Slot Confirmed',
+      'We confirm the following interview slot for <strong>'+esc(cand.name||'')+'</strong>:',
+      [['Candidate',cand.name||''],['Date & Time',sl.label||sl.date],['Format',sl.format||'Video']]);
+    sendEmails('Interview Confirmed — '+esc(cand.name||'')+' | Opsis',html2);
     renderPortal();
-  }catch(e){alert('Could not save. Please try again.');}
+  }).catch(function(){alert('Could not save. Try again.');});
 }
 
-function ts(id){var i=_sel.indexOf(id);if(i>-1)_sel.splice(i,1);else _sel.push(id);renderPortal();}
-async function subSlots(){if(!_sel.length){alert('Please select at least one slot.');return;}try{await sb.from('client_shares').update({selected_slot:_sel,status:'slots_submitted'}).eq('token',token);shareData.selected_slot=_sel;shareData.status='slots_submitted';renderPortal();}catch(e){alert('Could not save.');}}
-
-function renderSlotsDone(el){el.innerHTML='<div class="card"><div class="card-body" style="text-align:center;padding:48px"><div style="font-size:48px;margin-bottom:16px">📅</div><div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">Interviews Scheduled</div><div style="font-size:13px;color:var(--grey);line-height:1.6">Your preferred slots are confirmed. Calendar invites will follow shortly.</div></div></div>'+nrHtml();}
-
+/* ── STAGE 4: OFFER ──────────────────────────────────────── */
 function renderOffer(el){
   var cands=(shareData.candidates||[]).filter(function(c){return c.pipelineStatus==='offer_extended';});
-  var html='<div class="card"><div class="card-hd"><h2>📋 Offer Extended</h2><p>Please review and confirm joining for the candidate(s) below</p></div><div class="card-body">'+
-    '<div class="al ai">An offer has been extended. Kindly confirm once the candidate accepts and the joining date is finalised.</div></div></div>';
+  var html='<div class="card"><div class="ch"><h2>📋 Offer Extended</h2><p>Please review and confirm joining for the candidate(s) below</p></div>'+
+  '<div class="cb2"><div class="al ai">An offer has been extended. Confirm the joining date to complete the placement.</div></div></div>';
+  if(!cands.length){
+    html+='<div class="card"><div class="cb2" style="text-align:center;padding:32px;color:var(--grey)">Offer details will appear here once extended.</div></div>';
+  }
   cands.forEach(function(c,i){
     var od=c.offerData||{};var joined=c.pipelineStatus==='joined';
-    var fmtD2=function(d){try{return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});}catch(e){return d||'—';}};
-    html+='<div class="card"><div class="card-hd"><h2>'+esc(c.name||'Candidate')+'</h2>'+
-      (od.designation?'<p>'+esc(od.designation)+'</p>':'')+
-      '</div><div class="card-body">'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+
-      '<div class="chip"><div class="chip-l">💰 Offered CTC</div><div class="chip-v" style="color:var(--ok)">'+esc(od.ctc||'—')+'</div></div>'+
-      '<div class="chip"><div class="chip-l">📅 Proposed Joining</div><div class="chip-v">'+fmtD2(od.joinDate)+'</div></div>'+
-      (od.validUntil?'<div class="chip"><div class="chip-l">⏳ Offer Valid Until</div><div class="chip-v">'+fmtD2(od.validUntil)+'</div></div>':'')+
-      '</div>'+
-      (od.notes?'<div style="font-size:12px;color:var(--grey);padding:10px;background:#f9f7f4;border-radius:6px;margin-bottom:16px">📌 '+esc(od.notes)+'</div>':'')+
-      (joined?'<div class="al ao">✅ Joining confirmed on '+fmtD2(c.joiningDate)+'</div>':
-        '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-        '<button class="btn bp" onclick="confJoining(''+esc(c.id||c.name)+'','+i+')" style="flex:1">✅ Confirm Joining</button>'+
-        '<button class="btn bo" onclick="discussOffer('+i+')" style="flex:1">💬 Discuss</button>'+
-        '</div>'+
-        '<div id="jdPicker'+i+'" style="display:none;margin-top:12px">'+
-        '<label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Confirmed Joining Date</label>'+
-        '<input type="date" id="jDate'+i+'" style="width:100%;padding:9px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;margin-bottom:8px">'+
-        '<button class="btn bp" onclick="saveJoining(''+esc(c.id||c.name)+'','+i+')">Confirm & Submit →</button></div>')+
-      '</div></div>';
+    html+='<div class="card"><div class="ch"><h2>'+esc(c.name||'Candidate')+'</h2>'+(od.designation?'<p>'+esc(od.designation)+'</p>':'')+
+    '</div><div class="cb2">'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+
+    '<div class="chip"><div class="chip-l">💰 Offered CTC</div><div class="chip-v" style="color:var(--ok)">'+esc(od.ctc||'—')+'</div></div>'+
+    '<div class="chip"><div class="chip-l">📅 Proposed Joining</div><div class="chip-v">'+fmtFull(od.joinDate)+'</div></div>'+
+    (od.validUntil?'<div class="chip"><div class="chip-l">⏳ Offer Valid Until</div><div class="chip-v">'+fmtFull(od.validUntil)+'</div></div>':'')+
+    '</div>'+
+    (od.notes?'<div style="font-size:12px;color:var(--grey);padding:10px;background:#f9f7f4;border-radius:6px;margin-bottom:16px">📌 '+esc(od.notes)+'</div>':'')+
+    (joined?'<div class="al ao">✅ Joining confirmed: '+fmtFull(c.joiningDate)+'</div>':
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+    '<button class="btn bp" onclick="showJoinPicker('+i+')" style="flex:1">✅ Confirm Joining</button>'+
+    '<button class="btn bo" onclick="window.location.href=\'mailto:info@opsisplacements.com?subject=Query: Offer for '+esc(c.name||'')+'\'" style="flex:1">💬 Discuss with Opsis</button></div>'+
+    '<div id="jp'+i+'" style="display:none;margin-top:12px;padding:14px;background:#f0f4fb;border-radius:8px">'+
+    '<label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Confirm Joining Date</label>'+
+    '<input type="date" id="jd'+i+'" style="width:100%;padding:9px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;margin-bottom:10px">'+
+    '<button class="btn bp" onclick="saveJoining('+i+')">Confirm & Submit →</button></div>')+
+    '</div></div>';
   });
-  if(!cands.length)html+='<div class="card"><div class="card-body" style="text-align:center;padding:32px;color:var(--grey)">Offer details will appear here once extended.</div></div>';
   el.innerHTML=html+nrHtml();
 }
 
-function confJoining(id,i){
-  document.getElementById('jdPicker'+i).style.display='block';
-}
+function showJoinPicker(i){var el=document.getElementById('jp'+i);if(el)el.style.display='block';}
 
-function discussOffer(i){
-  window.location.href='mailto:info@opsisplacements.com?subject=Query: Offer Discussion&body=Dear Opsis Team,
-
-I would like to discuss the offer details.
-
-Regards';
-}
-
-async function saveJoining(id,i){
-  var dateEl=document.getElementById('jDate'+i);
+function saveJoining(i){
+  var dateEl=document.getElementById('jd'+i);
   if(!dateEl||!dateEl.value){alert('Please select the joining date.');return;}
-  var joiningDate=dateEl.value;
-  var cands=shareData.candidates||[];
-  var cand=cands.find(function(c){return c.id===id||c.name===id;});
-  if(!cand)return;
-  var fmtD2=function(d){try{return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});}catch(e){return d;}};
-  cand.pipelineStatus='joined';cand.joiningDate=joiningDate;shareData.candidates=cands;
-  try{
-    await sb.from('client_shares').update({candidates:cands}).eq('token',token);
-    // Send joining confirmation email to client + BCC info@
-    var html2='<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">'+
-      '<div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;overflow:hidden">'+
-      '<div style="background:#1b3a6b;padding:20px 24px"><h2 style="color:#fff;margin:0;font-size:16px">OPSIS CONSULTING INDIA PVT. LTD.</h2>'+
-      '<p style="color:rgba(255,255,255,.6);margin:4px 0 0;font-size:11px">Joining Confirmed</p></div>'+
-      '<div style="padding:24px">'+
-      '<p style="color:#333;font-size:14px;margin:0 0 16px">Dear '+esc(shareData.client_company||'Sir/Madam')+',</p>'+
-      '<p style="color:#333;font-size:14px;margin:0 0 16px;line-height:1.6">'+
-      'We are delighted to confirm that <strong>'+esc(cand.name||'the candidate')+'</strong> will be joining your organisation on <strong>'+fmtD2(joiningDate)+'</strong>.</p>'+
-      '<div style="background:#d1fae5;border-radius:8px;padding:16px;margin-bottom:20px;text-align:center">'+
-      '<div style="font-size:24px;margin-bottom:8px">🎉</div>'+
-      '<div style="font-size:16px;font-weight:700;color:#065f46">Joining Date: '+fmtD2(joiningDate)+'</div></div>'+
-      '<p style="font-size:13px;color:#555;line-height:1.6">Thank you for placing your trust in Opsis Consulting. We wish '+esc(cand.name||'the candidate')+' a successful and rewarding journey with your team!</p>'+
-      '<p style="font-size:12px;color:#999;margin-top:20px;text-align:center">Opsis Consulting India Pvt. Ltd. | 8123999977 | info@opsisplacements.com</p>'+
-      '</div></div></body></html>';
-    try{
-      emailjs.init('t4LYcYSryDAgwP0Iw');
-      emailjs.send('service_llgpy53','template_ofjfrbp',{
-        to_email:shareData.client_email||shareData.auth_email||'',
-        subject:'Joining Confirmed — '+esc(cand.name||'')+(shareData.client_company?' | '+shareData.client_company:''),
-        message:html2,from_email:'info@opsisplacements.com',
-        from_name:'Opsis Consulting India Pvt. Ltd.',reply_to:'info@opsisplacements.com'
-      });
-      emailjs.send('service_llgpy53','template_ofjfrbp',{
-        to_email:'info@opsisplacements.com',
-        subject:'[JOINED] '+esc(cand.name||'')+' — '+esc(shareData.client_company||''),
-        message:html2,from_email:'info@opsisplacements.com',
-        from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'
-      });
-    }catch(e){}
+  var jDate=dateEl.value;
+  var cands=(shareData.candidates||[]).filter(function(c){return c.pipelineStatus==='offer_extended';});
+  var cand=cands[i];if(!cand)return;
+  var allCands=shareData.candidates||[];
+  allCands.forEach(function(c){if(c.name===cand.name){c.pipelineStatus='joined';c.joiningDate=jDate;}});
+  shareData.candidates=allCands;
+  sb.from('client_shares').update({candidates:allCands}).eq('token',token).then(function(){
+    var html2=buildConfEmail('Joining Confirmed!','Placement Confirmed',
+      'We are delighted to confirm that <strong>'+esc(cand.name||'')+'</strong> will be joining your organisation.',
+      [['Candidate',cand.name||''],['Joining Date',fmtFull(jDate)],['Status','✅ Confirmed']]);
+    sendEmails('Joining Confirmed — '+esc(cand.name||'')+' | Opsis',html2);
     renderPortal();
-  }catch(e){alert('Could not save. Please try again.');}
+  }).catch(function(){alert('Could not save. Try again.');});
 }
 
-function renderDone(el){el.innerHTML='<div class="card"><div class="card-body" style="text-align:center;padding:48px"><div style="font-size:48px;margin-bottom:16px">🎉</div><div style="font-size:20px;font-weight:800;color:var(--ok);margin-bottom:8px">Placement Complete!</div><div style="font-size:13px;color:var(--grey);line-height:1.6">Thank you for partnering with Opsis Consulting!</div></div></div>'+nrHtml();}
+/* ── STAGE 5: DONE ───────────────────────────────────────── */
+function renderDone(el){
+  var joined=(shareData.candidates||[]).filter(function(c){return c.pipelineStatus==='joined';});
+  el.innerHTML='<div class="card"><div class="cb2" style="text-align:center;padding:48px">'+
+  '<div style="font-size:48px;margin-bottom:16px">🎉</div>'+
+  '<div style="font-size:20px;font-weight:800;color:var(--ok);margin-bottom:8px">Placement Complete!</div>'+
+  '<div style="font-size:13px;color:var(--grey);line-height:1.6">'+joined.map(function(c){return '<strong>'+esc(c.name)+'</strong> has joined your team'+(c.joiningDate?' on '+fmtFull(c.joiningDate):'')+'.';}).join(' ')+'</div>'+
+  '<div style="margin-top:16px;font-size:12px;color:var(--grey)">Thank you for partnering with Opsis Consulting! 🙌</div></div></div>'+nrHtml();
+}
 
-function fmtD(d){try{return new Date(d).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});}catch(e){return String(d);}}
-
-// ── ADD NEW REQUIREMENT ───────────────────────────────────────
-var _nrF=[];
+/* ── ADD NEW REQUIREMENT ─────────────────────────────────── */
 function nrHtml(){
-  return '<div class="nr">'+
-  '<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px">➕ Add a New Requirement</div>'+
-  '<div style="font-size:12px;color:var(--grey);margin-bottom:14px">Have another position to fill? Share the details below.</div>'+
+  return '<div class="nr"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px">➕ Add a New Requirement</div>'+
+  '<div style="font-size:12px;color:var(--grey);margin-bottom:14px">Have another position to fill?</div>'+
   '<div class="g2" style="margin-bottom:14px">'+
   '<button id="nrU" onclick="setNR(\'u\')" class="btn bo" style="padding:14px;border-radius:10px;text-align:center;font-size:13px">📎<br><strong>Upload JD</strong><br><span style="font-size:11px;color:var(--grey);font-weight:400">PDF, Word, image</span></button>'+
-  '<button id="nrF" onclick="setNR(\'f\')" class="btn bo" style="padding:14px;border-radius:10px;text-align:center;font-size:13px">📝<br><strong>Quick Form</strong><br><span style="font-size:11px;color:var(--grey);font-weight:400">Fill in details</span></button>'+
-  '</div>'+
+  '<button id="nrF" onclick="setNR(\'f\')" class="btn bo" style="padding:14px;border-radius:10px;text-align:center;font-size:13px">📝<br><strong>Quick Form</strong><br><span style="font-size:11px;color:var(--grey);font-weight:400">Fill in details</span></button></div>'+
   '<div id="nrUS" style="display:none">'+
-  '<div class="uz" onclick="document.getElementById(\'nrFI\').click()" style="padding:20px" ondragover="event.preventDefault()" ondrop="handleNRDrop(event)">'+
-  '<div style="font-size:24px;margin-bottom:4px">☁️</div><div style="font-size:12px;font-weight:600;color:var(--navy)">Click to upload or drag & drop</div></div>'+
-  '<input type="file" id="nrFI" accept=".pdf,.docx,.doc,.png,.jpg" multiple style="display:none" onchange="handleNRFiles(this.files)">'+
+  '<div class="uz" onclick="document.getElementById(\'nrFI\').click()" style="padding:20px">'+
+  '<div style="font-size:24px;margin-bottom:4px">☁️</div><div style="font-size:12px;font-weight:600;color:var(--navy)">Click or drag to upload</div></div>'+
+  '<input type="file" id="nrFI" accept=".pdf,.docx,.doc,.png,.jpg" multiple style="display:none" onchange="hNRFiles(this.files)">'+
   '<div id="nrFL" style="margin-top:8px"></div>'+
   '<input id="nrUN" placeholder="Position title, budget, notes…" style="width:100%;padding:8px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;margin-top:8px;font-family:inherit">'+
-  '<button class="btn bp bsm" onclick="subNRU()" style="margin-top:8px;width:100%">Submit New Requirement →</button></div>'+
+  '<button class="btn bp bsm" onclick="sNRU()" style="margin-top:8px;width:100%">Submit →</button></div>'+
   '<div id="nrFS" style="display:none">'+
   '<div class="g2">'+
   '<div><label style="font-size:11px;font-weight:600;color:var(--grey);display:block;margin-bottom:4px">Job Title *</label><input id="nrT" placeholder="e.g. HR Manager" style="width:100%;padding:8px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;font-family:inherit"></div>'+
@@ -497,37 +441,62 @@ function nrHtml(){
   '<div><label style="font-size:11px;font-weight:600;color:var(--grey);display:block;margin-bottom:4px">Work Mode</label><select id="nrWM" style="width:100%;padding:8px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px"><option>On-site</option><option>Hybrid</option><option>Remote</option></select></div>'+
   '<div><label style="font-size:11px;font-weight:600;color:var(--grey);display:block;margin-bottom:4px">Experience</label><input id="nrE" placeholder="e.g. 3-5 years" style="width:100%;padding:8px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;font-family:inherit"></div>'+
   '<div><label style="font-size:11px;font-weight:600;color:var(--grey);display:block;margin-bottom:4px">CTC Budget</label><input id="nrC" placeholder="e.g. 6-10 LPA" style="width:100%;padding:8px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;font-family:inherit"></div>'+
-  '<div><label style="font-size:11px;font-weight:600;color:var(--grey);display:block;margin-bottom:4px">Location</label><input id="nrL" placeholder="e.g. Bengaluru" style="width:100%;padding:8px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;font-family:inherit"></div>'+
-  '</div>'+
-  '<div style="margin-top:8px"><label style="font-size:11px;font-weight:600;color:var(--grey);display:block;margin-bottom:4px">Key Skills</label><textarea id="nrSK" placeholder="Skills, responsibilities…" style="width:100%;padding:8px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;min-height:60px;font-family:inherit;resize:vertical"></textarea></div>'+
-  '<button class="btn bp bsm" onclick="subNRF()" style="margin-top:8px;width:100%">Submit New Requirement →</button></div>'+
+  '<div><label style="font-size:11px;font-weight:600;color:var(--grey);display:block;margin-bottom:4px">Location</label><input id="nrL" placeholder="e.g. Bengaluru" style="width:100%;padding:8px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;font-family:inherit"></div></div>'+
+  '<div style="margin-top:8px"><label style="font-size:11px;font-weight:600;color:var(--grey);display:block;margin-bottom:4px">Key Skills</label>'+
+  '<textarea id="nrSK" placeholder="Skills, responsibilities…" style="width:100%;padding:8px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;min-height:60px;font-family:inherit;resize:vertical"></textarea></div>'+
+  '<button class="btn bp bsm" onclick="sNRF()" style="margin-top:8px;width:100%">Submit →</button></div>'+
   '<div id="nrMsg" style="font-size:12px;margin-top:8px;display:none;color:var(--ok)"></div></div>';
 }
-
 function setNR(m){
-  _nrMode=m;_nrF=[];
+  _nrFiles=[];
   document.getElementById('nrUS').style.display=m==='u'?'block':'none';
   document.getElementById('nrFS').style.display=m==='f'?'block':'none';
   var a=document.getElementById('nrU'),b=document.getElementById('nrF');
   if(a){a.style.background=m==='u'?'var(--navy)':'';a.style.color=m==='u'?'#fff':'';}
   if(b){b.style.background=m==='f'?'var(--navy)':'';b.style.color=m==='f'?'#fff':'';}
 }
-
-function handleNRFiles(files){Array.from(files).forEach(function(f){_nrF.push(f);});renderNRFL();}
-function handleNRDrop(e){e.preventDefault();handleNRFiles(e.dataTransfer.files);}
-function renderNRFL(){var el=document.getElementById('nrFL');if(el)el.innerHTML=_nrF.map(function(f,i){return '<div style="display:flex;align-items:center;gap:8px;padding:6px;background:#f0f4fb;border-radius:6px;margin-bottom:4px;font-size:12px">📄 '+esc(f.name)+'<button onclick="_nrF.splice('+i+',1);renderNRFL()" style="background:none;border:none;color:var(--err);cursor:pointer;margin-left:auto">×</button></div>';}).join('');}
-
-async function subNRU(){if(!_nrF.length){alert('Please select a file.');return;}await saveNR({type:'upload',files:_nrF.map(function(f){return f.name;}),notes:(document.getElementById('nrUN')&&document.getElementById('nrUN').value)||''});}
-async function subNRF(){var t=document.getElementById('nrT')&&document.getElementById('nrT').value.trim();if(!t){alert('Please enter a job title.');return;}var g=function(id){return(document.getElementById(id)&&document.getElementById(id).value.trim())||'';};await saveNR({type:'form',position:{title:t,openings:g('nrO')||1,mode:g('nrWM'),experience:g('nrE'),ctc:g('nrC'),location:g('nrL'),skills:g('nrSK')}});}
-
-async function saveNR(data){
-  try{
-    await sb.from('jd_requests').insert({token:'nr-'+Date.now(),client_id:shareData.client_id||'',client_company:shareData.client_company||'',positions:[data.position||{title:data.notes||'New Requirement'}],submitted_data:data,status:'new_requirement'});
-    var m=document.getElementById('nrMsg');if(m){m.style.display='block';m.textContent='✅ New requirement submitted! Our team will be in touch shortly.';}
-    _nrMode='';_nrF=[];
+function hNRFiles(files){Array.from(files).forEach(function(f){_nrFiles.push(f);});renderNRFL();}
+function renderNRFL(){var el=document.getElementById('nrFL');if(el)el.innerHTML=_nrFiles.map(function(f,i){return '<div style="display:flex;align-items:center;gap:8px;padding:6px;background:#f0f4fb;border-radius:6px;margin-bottom:4px;font-size:12px">📄 '+esc(f.name)+'<button onclick="_nrFiles.splice('+i+',1);renderNRFL()" style="background:none;border:none;color:var(--err);cursor:pointer;margin-left:auto">×</button></div>';}).join('');}
+function sNRU(){if(!_nrFiles.length){alert('Please select a file.');return;}saveNR({type:'upload',files:_nrFiles.map(function(f){return f.name;}),notes:document.getElementById('nrUN')&&document.getElementById('nrUN').value||''});}
+function sNRF(){
+  var t=document.getElementById('nrT')&&document.getElementById('nrT').value.trim();
+  if(!t){alert('Please enter a job title.');return;}
+  var g=function(id){return document.getElementById(id)&&document.getElementById(id).value.trim()||'';};
+  saveNR({type:'form',position:{title:t,openings:g('nrO')||1,mode:g('nrWM'),experience:g('nrE'),ctc:g('nrC'),location:g('nrL'),skills:g('nrSK')}});
+}
+function saveNR(data){
+  sb.from('jd_requests').insert({token:'nr-'+Date.now(),client_id:shareData.client_id||'',client_company:shareData.client_company||'',positions:[data.position||{title:data.notes||'New Requirement'}],submitted_data:data,status:'new_requirement'}).then(function(){
+    var m=document.getElementById('nrMsg');if(m){m.style.display='block';m.textContent='✅ Submitted! Our team will be in touch.';}
+    _nrFiles=[];
     document.getElementById('nrUS').style.display='none';
     document.getElementById('nrFS').style.display='none';
-  }catch(e){alert('Could not submit. Please email info@opsisplacements.com');}
+    try{emailjs.send(EJS_SVC,EJS_TPL,{to_email:'info@opsisplacements.com',subject:'New Requirement — '+(shareData.client_company||''),message:'<p>New requirement from <strong>'+(shareData.client_company||'')+'</strong>.</p>',from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'});}catch(e){}
+  }).catch(function(){alert('Could not submit. Please email info@opsisplacements.com');});
+}
+
+/* ── HELPERS ─────────────────────────────────────────────── */
+function fmtD(d){try{return new Date(d).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});}catch(e){return String(d||'');}}
+function fmtFull(d){try{return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});}catch(e){return String(d||'');}}
+
+function buildConfEmail(heading,subheading,intro,rows){
+  return '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px">'+
+    '<div style="max-width:520px;margin:auto;background:#fff;border-radius:12px;overflow:hidden">'+
+    '<div style="background:#1b3a6b;padding:20px 24px"><h2 style="color:#fff;margin:0;font-size:16px">OPSIS CONSULTING INDIA PVT. LTD.</h2>'+
+    '<p style="color:rgba(255,255,255,.6);margin:4px 0 0;font-size:11px">'+esc(subheading)+'</p></div>'+
+    '<div style="padding:24px">'+
+    '<p style="margin:0 0 16px;font-size:14px;color:#333">Dear '+esc(shareData.client_company||'Sir/Madam')+',</p>'+
+    '<p style="margin:0 0 20px;font-size:14px;color:#333;line-height:1.6">'+intro+'</p>'+
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:20px">'+
+    rows.map(function(r){return '<tr><td style="padding:10px;background:#f0f4fb;font-size:12px;font-weight:700;color:#1b3a6b;width:35%">'+esc(r[0])+'</td><td style="padding:10px;font-size:13px">'+esc(r[1])+'</td></tr>';}).join('')+
+    '</table><p style="font-size:12px;color:#999;text-align:center">Opsis Consulting India Pvt. Ltd. | 8123999977 | info@opsisplacements.com</p>'+
+    '</div></div></body></html>';
+}
+
+function sendEmails(subject,html){
+  try{
+    emailjs.send(EJS_SVC,EJS_TPL,{to_email:shareData.client_email||shareData.auth_email||'info@opsisplacements.com',subject:subject,message:html,from_email:'info@opsisplacements.com',from_name:'Opsis Consulting India Pvt. Ltd.',reply_to:'info@opsisplacements.com'});
+    emailjs.send(EJS_SVC,EJS_TPL,{to_email:'info@opsisplacements.com',subject:'[COPY] '+subject,message:html,from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'});
+  }catch(e){}
 }
 </script>
 </body>
