@@ -588,6 +588,51 @@ function downloadProfile(idx){
 }
 
 
+function viewAssessment(idx){
+  var c=(shareData.candidates||[])[idx];
+  if(!c||!c.assessmentAnswers){alert('No assessment available for this candidate.');return;}
+  var questions=shareData.clientAssessmentQuestions||[];
+  var answers=c.assessmentAnswers||{};
+  var html='';
+  html+='<div style="background:linear-gradient(135deg,#059669,#047857);padding:14px 18px;margin:-20px -20px 16px;border-radius:12px 12px 0 0">';
+  html+='<div style="font-size:15px;font-weight:800;color:#fff">Assessment Sheet</div>';
+  html+='<div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">'+esc(c.name||c.label||'Candidate')+'</div>';
+  html+='</div>';
+  if(questions.length){
+    questions.forEach(function(q){
+      var ans=answers[q.id]||'';
+      html+='<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f0f0f0">'+
+        '<div style="font-size:12px;color:#888;margin-bottom:3px">'+esc(q.text)+'</div>'+
+        '<div style="font-size:14px;font-weight:700;color:'+(ans?'#1b3a6b':'#dc2626')+'">'+esc(ans||'Not answered')+'</div></div>';
+    });
+  } else {
+    // Fallback: show all non-meta keys
+    Object.keys(answers).filter(function(k){return k[0]!=='_';}).forEach(function(k){
+      html+='<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0f0f0">'+
+        '<div style="font-size:12px;color:#888;margin-bottom:2px">'+esc(k)+'</div>'+
+        '<div style="font-size:14px;font-weight:700;color:#1b3a6b">'+esc(answers[k])+'</div></div>';
+    });
+  }
+  if(answers._submittedBy){
+    html+='<div style="background:#f9f7f4;border-radius:8px;padding:10px 12px;font-size:12px;color:#888;margin-top:4px">'+
+      'Assessed by: <strong style="color:#1b3a6b">'+esc(answers._submittedBy)+'</strong>'+
+      (answers._submittedAt?' &nbsp;&middot;&nbsp; '+new Date(answers._submittedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'')+'</div>';
+  }
+  var mod=document.getElementById('assessmentViewModal');
+  if(!mod){
+    mod=document.createElement('div');
+    mod.id='assessmentViewModal';
+    mod.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px';
+    mod.onclick=function(e){if(e.target===mod)mod.style.display='none';};
+    document.body.appendChild(mod);
+  }
+  mod.innerHTML='<div style="background:#fff;border-radius:14px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px;position:relative">'+
+    '<button onclick="document.getElementById(&quot;assessmentViewModal&quot;).style.display=&quot;none&quot;" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:22px;cursor:pointer;color:#888">&times;</button>'+
+    html+'</div>';
+  mod.style.display='flex';
+}
+
+
 function nrHtml(){
   return '<div class="nr"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px">➕ Add a New Requirement</div>'+
   '<div style="font-size:12px;color:var(--grey);margin-bottom:14px">Have another position to fill?</div>'+
