@@ -295,6 +295,10 @@ function candCard(c,i){
   '<div class="cc-bd" id="ccb'+i+'">'+
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">'+
   [['💼','Experience',c.experience||'—'],['💰','Current CTC',c.currentCTC||'—'],['🎯','Expected',c.expectedCTC||'—'],['📅','Notice',c.noticePeriod||'—'],['📍','Location',c.location||'—'],['🎓','Qualification',c.qualification||'—']].map(function(s){return '<div class="chip"><div class="chip-l">'+s[0]+' '+s[1]+'</div><div class="chip-v">'+esc(s[2])+'</div></div>';}).join('')+'</div>'+
+  (c.profileUrl?'<a href="'+esc(c.profileUrl)+'" target="_blank" style="display:flex;align-items:center;gap:8px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:10px;text-decoration:none;color:#1b3a6b">'+
+    '<span style="font-size:16px">&#128196;</span>'+
+    '<span style="flex:1"><div style="font-size:13px;font-weight:700">View Full Profile</div><div style="font-size:11px;color:#888">Opens redacted resume in a new tab</div></span>'+
+    '<span style="font-size:12px;font-weight:700;color:#2563eb">&rarr;</span></a>':'')+
   (c.summary?'<div style="font-size:12px;color:var(--grey);line-height:1.6;margin-bottom:12px;background:var(--cream);padding:10px;border-radius:6px">'+esc(c.summary)+'</div>':'')+
   '<div class="fb-row">'+
   '<button class="fb i'+(c.interestStatus==='interested'?' a':'')+'" onclick="markI('+i+',\'interested\')">✅ Interested</button>'+
