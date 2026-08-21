@@ -274,14 +274,30 @@ function renderCands(el){
   if(!c.length){renderJDRec(el);return;}
   var tot=c.length,int=c.filter(function(x){return x.interestStatus==='interested';}).length,
     pend=tot-int-c.filter(function(x){return x.interestStatus==='not_interested';}).length;
-  el.innerHTML='<div class="card"><div class="ch"><h2>👥 Review Shortlisted Candidates</h2><p>Mark your interest — we will schedule interviews for selected candidates</p></div><div class="cb2">'+
+  var posTitle=shareData.position_title||shareData.positionTitle||'';
+  var clientCo=shareData.client_company||shareData.clientCompany||'';
+  var openings=shareData.openings||'';
+  var location=shareData.location||'';
+  var workMode=shareData.workMode||shareData.work_mode||'';
+  el.innerHTML=
+  // Position context banner
+  '<div style="background:linear-gradient(135deg,#1b3a6b,#2a5298);padding:16px 20px;border-radius:12px;margin-bottom:14px">'+
+    '<div style="font-size:11px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Opsis Consulting India Pvt. Ltd.</div>'+
+    '<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">'+esc(posTitle)+'</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:10px">'+
+    (clientCo?'<span style="font-size:12px;color:rgba(255,255,255,.7)">&#127970; '+esc(clientCo)+'</span>':'')+
+    (openings?'<span style="font-size:12px;color:rgba(255,255,255,.7)">&#128203; '+openings+' opening'+(openings>1?'s':'')+'</span>':'')+
+    (workMode?'<span style="font-size:12px;color:rgba(255,255,255,.7)">&#128205; '+esc(workMode)+'</span>':'')+
+    (location?'<span style="font-size:12px;color:rgba(255,255,255,.7)">'+esc(location)+'</span>':'')+
+    '</div></div>'+
+  '<div class="card"><div class="ch"><h2>&#128101; Shortlisted Profiles</h2><p>Review each candidate and mark your interest — we will schedule interviews for selected candidates</p></div><div class="cb2">'+
   '<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">'+
   '<div style="flex:1;min-width:70px;text-align:center;background:#f0f4fb;border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--navy)">'+tot+'</div><div style="font-size:11px;color:var(--grey)">Shared</div></div>'+
   '<div style="flex:1;min-width:70px;text-align:center;background:#d1fae5;border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--ok)">'+int+'</div><div style="font-size:11px;color:var(--ok)">Interested</div></div>'+
   '<div style="flex:1;min-width:70px;text-align:center;background:#fffbeb;border-radius:8px;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--warn)">'+pend+'</div><div style="font-size:11px;color:var(--warn)">Pending</div></div></div>'+
   (pend?'<div class="al ai">📌 Please review all '+tot+' candidates and mark your interest.</div>':
   int?'<div class="al ao">✅ All reviewed! Proceeding with interview scheduling.</div>':'')+
-  '</div></div>'+c.map(function(x,i){return candCard(x,i);}).join('')+nrHtml();
+  '</div></div></div>'+c.map(function(x,i){return candCard(x,i);}).join('')+nrHtml();
 }
 function candCard(c,i){
   var sc={interested:['#d1fae5','var(--ok)','Interested ✓'],not_interested:['#fee2e2','var(--err)','Not a Fit'],hold:['#fffbeb','var(--warn)','On Hold']}[c.interestStatus]||['var(--lgrey)','var(--grey)','Pending'];
@@ -511,6 +527,67 @@ function renderDone(el){
 }
 
 /* ── ADD NEW REQUIREMENT ─────────────────────────────────── */
+function downloadProfile(idx){
+  var c=(shareData.candidates||[])[idx];
+  if(!c)return;
+  var p=c.profile||{};
+  var wh=c.workHistory||p.workHistory||[];
+  var skills=c.skills||p.skills||[];
+  var certs=c.certifications||p.certifications||[];
+  var edu=c.education||p.education||{};
+  var posTitle=shareData.position_title||shareData.positionTitle||'';
+  var sharedAt=shareData.shared_at?new Date(shareData.shared_at).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}):'';
+
+  var whRows=wh.map(function(w){
+    return '<tr><td style="padding:7px 10px;font-size:12px;font-weight:600;border-bottom:1px solid #f0f0f0">'+esc(w.role||w.title||'')+'</td>'+
+      '<td style="padding:7px 10px;font-size:12px;color:#2563eb;border-bottom:1px solid #f0f0f0">'+esc(w.company||w.industry||'')+'</td>'+
+      '<td style="padding:7px 10px;font-size:11px;color:#888;border-bottom:1px solid #f0f0f0">'+esc(w.duration||'')+'</td></tr>';
+  }).join('');
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8">'+
+    '<title>'+esc(c.name||c.label||'Candidate')+' — '+esc(posTitle)+'</title>'+
+    '<style>@media print{body{margin:0}}.no-print{display:none!important}'+
+    'body{font-family:Arial,sans-serif;margin:20px;color:#1a1916;background:#fff}'+
+    '.hdr{background:#1b3a6b;color:#fff;padding:18px 22px;border-radius:8px 8px 0 0;margin-bottom:0}'+
+    '.hdr h1{margin:0 0 4px;font-size:20px}.hdr p{margin:0;font-size:11px;color:rgba(255,255,255,.6)}'+
+    '.stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #e8e4da;border-top:none}'+
+    '.stat{padding:10px;border-right:1px solid #e8e4da;text-align:center}'+
+    '.stat:last-child{border-right:none}'+
+    '.stat .v{font-size:14px;font-weight:700;color:#1b3a6b}.stat .l{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.4px}'+
+    '.section{margin-top:16px;padding-bottom:12px;border-bottom:1px solid #f0f0f0}'+
+    '.sec-title{font-size:11px;font-weight:700;color:#1b3a6b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}'+
+    '.chip{display:inline-block;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:20px;padding:2px 10px;font-size:11px;margin:2px}'+
+    '.footer{margin-top:20px;padding-top:12px;border-top:1px solid #e8e4da;font-size:10px;color:#aaa;display:flex;justify-content:space-between}'+
+    '.print-btn{background:#1b3a6b;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;margin-bottom:16px}'+
+    'table{width:100%;border-collapse:collapse}</style></head><body>'+
+    '<button class="print-btn no-print" onclick="window.print()">&#128438; Print / Save as PDF</button>'+
+    '<div class="hdr"><h1>'+esc(c.name||c.label||'Candidate')+'</h1>'+
+    '<p>&#128274; Identity Redacted &nbsp;&middot;&nbsp; '+esc(posTitle)+(sharedAt?' &nbsp;&middot;&nbsp; Shared '+sharedAt:'')+'</p></div>'+
+    '<div class="stats">'+
+    '<div class="stat"><div class="v">'+esc(c.experience||p.totalExperience||'—')+'</div><div class="l">Experience</div></div>'+
+    '<div class="stat"><div class="v">'+esc(c.currentCTC||p.currentCTC||'—')+'</div><div class="l">Current CTC</div></div>'+
+    '<div class="stat"><div class="v">'+esc(c.expectedCTC||p.expectedCTC||'—')+'</div><div class="l">Expected CTC</div></div>'+
+    '<div class="stat"><div class="v">'+esc(c.noticePeriod||p.noticePeriod||'—')+'</div><div class="l">Notice Period</div></div>'+
+    '<div class="stat"><div class="v">'+esc(c.relevantExperience||p.relevantExperience||'—')+'</div><div class="l">Relevant Exp</div></div>'+
+    '<div class="stat"><div class="v">'+esc(c.location||p.currentLocation||p.area||'—')+'</div><div class="l">Location</div></div>'+
+    '</div>'+
+    (wh.length?'<div class="section"><div class="sec-title">Work History</div><table>'+whRows+'</table></div>':'')+
+    (edu.degree||edu.institution?'<div class="section"><div class="sec-title">Education</div>'+
+      '<div style="font-size:13px;font-weight:600">'+esc(edu.degree||'')+(edu.field?' in '+esc(edu.field):'')+'</div>'+
+      '<div style="font-size:12px;color:#555;margin-top:2px">'+esc(edu.institution||'')+(edu.year?' &middot; '+esc(edu.year):'')+'</div></div>':'')+
+    (skills.length?'<div class="section"><div class="sec-title">Skills</div>'+
+      skills.map(function(sk){return'<span class="chip">'+esc(String(sk))+'</span>';}).join('')+'</div>':'')+
+    ((c.summary||c.matchSummary)?'<div class="section"><div class="sec-title">JD Match Summary</div>'+
+      '<div style="font-size:12px;line-height:1.6;background:#f9f7f4;padding:10px;border-radius:6px">'+esc(c.summary||c.matchSummary||'')+'</div></div>':'')+
+    '<div class="footer"><span>Opsis Consulting India Pvt. Ltd. &nbsp;&middot;&nbsp; info@opsisplacements.com</span>'+
+    '<span>Confidential &amp; Redacted</span></div>'+
+    '</body></html>';
+
+  var w2=window.open('','_blank');
+  if(w2){w2.document.write(html);w2.document.close();}
+}
+
+
 function nrHtml(){
   return '<div class="nr"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px">➕ Add a New Requirement</div>'+
   '<div style="font-size:12px;color:var(--grey);margin-bottom:14px">Have another position to fill?</div>'+
