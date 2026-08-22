@@ -425,15 +425,14 @@ function renderSlots(el){
         html+='<div style="font-size:12px;font-weight:700;color:var(--grey);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Select a preferred slot:</div>';
         slots.forEach(function(sl,si){
           var isSelected=(window[selKey]===si);
-          html+='<div onclick="pickSlotNew(''+selKey+'','+si+',this)" '+
+          html+='<div data-selkey="'+selKey+'" data-si="'+si+'" onclick="pickSlotNew(this.dataset.selkey,parseInt(this.dataset.si),this)" '+
             'style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid '+(isSelected?'var(--navy)':'var(--lgrey)')+
             ';border-radius:8px;margin-bottom:8px;cursor:pointer;background:'+(isSelected?'#eff6ff':'#fff')+'">'+
             '<span style="font-size:20px">'+(isSelected?'✅':'🗓')+'</span>'+
             '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--navy)">'+esc(sl.datetime||sl.label||'')+'</div>'+
             '<div style="font-size:11px;color:'+modeTxt+';font-weight:600">'+modeLabel+'</div></div></div>';
         });
-        html+='<button class="btn bp" id="confBtn_'+ci+'_'+activeIv.round+'" '+
-          'onclick="confSlotNew(''+selKey+'','+ci+','+activeIv.round+')" '+
+        html+='<button class="btn bp" id="confBtn_'+ci+'_'+activeIv.round+'" data-selkey="'+selKey+'" data-ci="'+ci+'" data-round="'+activeIv.round+'" onclick="var d=this.dataset;confSlotNew(d.selkey,parseInt(d.ci),parseInt(d.round))" '+
           'style="width:100%;margin-top:8px;'+(window[selKey]===undefined?'opacity:.5;pointer-events:none':'')+'">✅ Confirm Selected Slot →</button>';
         if(activeIv.notes)html+='<div style="font-size:12px;color:var(--grey);padding:8px;background:#f9f7f4;border-radius:6px;margin-top:10px">📌 '+esc(activeIv.notes)+'</div>';
       } else {
@@ -449,17 +448,14 @@ function renderSlots(el){
 function renderClientFeedbackForm(cand,ci,round){
   var fbKey='_fbOut_'+ci+'_'+round;
   var out=window[fbKey]||'';
+  var selStyle='flex:1;padding:10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;border:2px solid ';
   return '<div style="margin-top:14px;padding:14px;border:2px solid var(--lgrey);border-radius:8px">'+
     '<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px">📝 Interview Feedback — Round '+round+'</div>'+
     '<div style="display:flex;gap:10px;margin-bottom:12px">'+
-    '<button type="button" onclick="setClientFbOut(''+fbKey+'','selected','+ci+','+round+')" '+
-      'style="flex:1;padding:10px;border-radius:8px;border:2px solid '+(out==='selected'?'#059669':'var(--lgrey)')+
-      ';background:'+(out==='selected'?'#d1fae5':'transparent')+';color:'+(out==='selected'?'#059669':'var(--grey)')+
-      ';font-size:13px;font-weight:600;cursor:pointer">✅ Selected</button>'+
-    '<button type="button" onclick="setClientFbOut(''+fbKey+'','rejected','+ci+','+round+')" '+
-      'style="flex:1;padding:10px;border-radius:8px;border:2px solid '+(out==='rejected'?'#dc2626':'var(--lgrey)')+
-      ';background:'+(out==='rejected'?'#fee2e2':'transparent')+';color:'+(out==='rejected'?'#dc2626':'var(--grey)')+
-      ';font-size:13px;font-weight:600;cursor:pointer">❌ Rejected</button>'+
+    '<button type="button" data-fbkey="'+fbKey+'" data-outcome="selected" data-ci="'+ci+'" data-round="'+round+'" onclick="var d=this.dataset;setClientFbOut(d.fbkey,d.outcome,d.ci,d.round)" '+
+      'style="'+selStyle+(out==='selected'?'#059669;background:#d1fae5;color:#059669':'var(--lgrey);background:transparent;color:var(--grey)')+'">✅ Selected</button>'+
+    '<button type="button" data-fbkey="'+fbKey+'" data-outcome="rejected" data-ci="'+ci+'" data-round="'+round+'" onclick="var d=this.dataset;setClientFbOut(d.fbkey,d.outcome,d.ci,d.round)" '+
+      'style="'+selStyle+(out==='rejected'?'#dc2626;background:#fee2e2;color:#dc2626':'var(--lgrey);background:transparent;color:var(--grey)')+'">❌ Rejected</button>'+
     '</div>'+
     (out==='rejected'?'<select id="fbReason_'+ci+'_'+round+'" style="width:100%;padding:8px 10px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;margin-bottom:8px">'+
       '<option value="">— Reason for rejection —</option>'+
@@ -468,7 +464,7 @@ function renderClientFeedbackForm(cand,ci,round){
       '<option>Overqualified / Underqualified</option><option>Other</option></select>':'')+
     '<textarea id="fbComment_'+ci+'_'+round+'" placeholder="Additional comments (optional)" rows="2" '+
     'style="width:100%;border:1px solid var(--lgrey);border-radius:6px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:8px;box-sizing:border-box"></textarea>'+
-    (out?'<button class="btn bp" onclick="submitClientFeedback('+ci+','+round+')" style="width:100%">Submit Feedback</button>':'')+'</div>';
+    (out?'<button class="btn bp" data-ci="'+ci+'" data-round="'+round+'" onclick="var d=this.dataset;submitClientFeedback(d.ci,d.round)" style="width:100%">Submit Feedback</button>':'')+'</div>';
 }
 function setClientFbOut(fbKey,outcome,ci,round){window[fbKey]=outcome;renderPortal();}
 
