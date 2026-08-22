@@ -158,7 +158,11 @@ function getStage(){
   var hasJ=c.some(function(x){return x.pipelineStatus==='joined';});
   var hasO=c.some(function(x){return x.pipelineStatus==='offer_extended';});
   var sOk=st==='slots_submitted'||st==='slots_imported';
-  var hasSlots=c.some(function(x){return x.interview_slots&&x.interview_slots.length;});
+  // Support both old interview_slots and new interviews[] structure
+  var hasSlots=c.some(function(x){
+    return (x.interview_slots&&x.interview_slots.length)||
+           (x.interviews&&x.interviews.length&&(x.interviews[x.interviews.length-1].slots||[]).length);
+  });
   var allM=c.every(function(x){return x.interestStatus==='interested'||x.interestStatus==='not_interested';});
   var hasI=c.some(function(x){return x.interestStatus==='interested';});
   if(hasJ)return 'done';
@@ -329,38 +333,257 @@ function markI(i,status){
 }
 
 /* ── STAGE 3: INTERVIEW SLOTS ───────────────────────────── */
+function getModeLabel(mode){
+  return {tele:'📞 Tele-interview',virtual:'💻 Virtual',inperson:'🏢 In-person'}[mode]||mode||'📞 Tele-interview';
+}
+function getModeColor(mode){
+  return {tele:'#eff6ff',virtual:'#f0fdf4',inperson:'#fef3c7'}[mode]||'#f0f4fb';
+}
+function getModeTextColor(mode){
+  return {tele:'#1b3a6b',virtual:'#059669',inperson:'#d97706'}[mode]||'#1b3a6b';
+}
+
 function renderSlots(el){
   var cands=shareData.candidates||[];
-  var cwS=cands.filter(function(c){return c.interview_slots&&c.interview_slots.length;});
+  var cwS=cands.filter(function(c){
+    if(c.interestStatus!=='interested')return false;
+    if(c.interviews&&c.interviews.length)return true;
+    if(c.interview_slots&&c.interview_slots.length)return true;
+    return false;
+  });
+  var intCands=cands.filter(function(c){return c.interestStatus==='interested';});
   if(!cwS.length){
-    el.innerHTML='<div class="card"><div class="cb2" style="text-align:center;padding:48px"><div style="font-size:40px;margin-bottom:12px">📅</div>'+
-    '<div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:8px">Interview Scheduling</div>'+
-    '<div style="font-size:13px;color:var(--grey);line-height:1.6;margin-bottom:20px">Our team is coordinating interview slots based on candidate availability. Options will appear here shortly.</div>'+
-    '<button class="btn bo" onclick="reqNewSlots()" style="margin-top:8px">💬 Request Specific Date/Time</button></div></div>'+nrHtml();return;
+    el.innerHTML='<div class="card"><div class="cb2" style="text-align:center;padding:48px">'+
+    '<div style="font-size:40px;margin-bottom:12px">📅</div>'+
+    '<div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:8px">Interview Scheduling in Progress</div>'+
+    '<div style="font-size:13px;color:var(--grey);line-height:1.6;margin-bottom:20px">Our team is coordinating interview slots with candidate(s). Options will appear here shortly.</div>'+
+    (intCands.length?'<div style="font-size:12px;color:var(--ok);margin-bottom:16px">✅ '+intCands.length+' candidate(s) shortlisted</div>':'')+
+    '<button class="btn bo" onclick="reqNewSlots()" style="margin-top:8px">💬 Request Specific Date/Time</button></div></div>'+nrHtml();
+    return;
   }
-  window._swSlots=cwS; // Store for onclick access
-  var html='<div class="card"><div class="ch"><h2>📅 Select Interview Slots</h2><p>Please confirm your preferred interview time for each candidate</p></div>'+
-  '<div class="cb2"><div class="al ai">Select one slot per candidate and click Confirm. A calendar invite will follow.</div></div></div>';
+  var html='';
   cwS.forEach(function(c,ci){
-    var confirmed=c.confirmedSlot;
-    html+='<div class="card"><div class="ch"><h2>'+esc(c.name||'Candidate')+'</h2><p>'+esc(c.currentRole||'')+(c.currentCompany?' · '+esc(c.currentCompany):'')+'</p></div><div class="cb2">';
-    if(confirmed){
-      html+='<div class="al ao">✅ Confirmed: <strong>'+esc(confirmed.label||confirmed.date)+'</strong> ('+esc(confirmed.format)+')</div>';
-    } else {
-      (c.interview_slots||[]).forEach(function(sl,si){
-        var isSel=_candSel[ci]!==undefined&&_candSel[ci]===si;
-        html+='<div class="slot-opt'+(isSel?' sel':'')+'" onclick="pickSlot('+ci+','+si+')">'+
-          '<span style="font-size:18px">'+(isSel?'✅':'🗓')+'</span>'+
-          '<div><div style="font-size:13px;font-weight:600">'+esc(sl.label||fmtD(sl.date))+'</div>'+
-          '<div style="font-size:11px;color:var(--grey)">'+esc(sl.format||'Video')+'</div></div></div>';
-      });
-      if(c.slotNotes)html+='<div style="font-size:12px;color:var(--grey);padding:8px;background:#f9f7f4;border-radius:6px;margin-bottom:10px">📌 '+esc(c.slotNotes)+'</div>';
-      if(_candSel[ci]!==undefined){html+='<button class="btn bp" onclick="confSlot('+ci+')" style="width:100%;margin-top:10px">✅ Confirm This Slot →</button>';}
-      html+='<button class="btn bo" onclick="reqNewSlots()" style="width:100%;margin-top:8px;font-size:12px">None of these work? Request new slots</button>';
+    var interviews=c.interviews||[];
+    if(!interviews.length&&c.interview_slots&&c.interview_slots.length){
+      interviews=[{round:1,mode:'tele',slots:c.interview_slots,confirmed_slot:c.confirmedSlot||null,
+        status:c.confirmedSlot?'scheduled':'slots_sent',meeting_link:null,feedback:null}];
     }
-    html+='</div></div>';
+    var activeIv=interviews[interviews.length-1]||null;
+    if(!activeIv)return;
+    var modeLabel=getModeLabel(activeIv.mode);
+    var modeBg=getModeColor(activeIv.mode);
+    var modeTxt=getModeTextColor(activeIv.mode);
+    var ini=(c.name||'C').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    html+='<div class="card" style="margin-bottom:14px">';
+    html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--lgrey)">';
+    html+='<div class="av" style="background:#1b3a6b;flex-shrink:0">'+ini+'</div>';
+    html+='<div style="flex:1"><div style="font-size:15px;font-weight:700;color:var(--navy)">'+esc(c.name||'Candidate')+'</div>';
+    html+='<div style="font-size:12px;color:var(--grey)">'+esc(c.experience||'')+' experience</div></div>';
+    html+='<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+modeBg+';color:'+modeTxt+'">Round '+activeIv.round+' — '+modeLabel+'</span>';
+    html+='</div>';
+    if(activeIv.mode==='inperson'&&activeIv.venue){
+      html+='<div style="font-size:12px;color:var(--grey);padding:8px 12px;background:#fef3c7;border-radius:6px;margin-bottom:12px">'+
+        '🏢 <strong>Venue:</strong> '+esc(activeIv.venue)+'</div>';
+    }
+    var confirmed=activeIv.confirmed_slot;
+    var hasFeedback=activeIv.feedback&&activeIv.feedback.outcome;
+    if(hasFeedback){
+      var fb=activeIv.feedback;
+      var fbColor=fb.outcome==='selected'?'#d1fae5':'#fee2e2';
+      var fbTxtColor=fb.outcome==='selected'?'var(--ok)':'var(--err)';
+      var fbLabel=fb.outcome==='selected'?'✅ Selected — Proceeding to next round':'❌ Rejected';
+      html+='<div style="padding:12px 14px;background:'+fbColor+';border-radius:8px;margin-bottom:8px">';
+      html+='<div style="font-size:14px;font-weight:700;color:'+fbTxtColor+';margin-bottom:4px">'+fbLabel+'</div>';
+      if(fb.reason)html+='<div style="font-size:12px;color:var(--grey)">Reason: '+esc(fb.reason)+'</div>';
+      if(fb.comments)html+='<div style="font-size:12px;color:var(--grey);margin-top:4px">'+esc(fb.comments)+'</div>';
+      html+='</div>';
+    } else if(confirmed){
+      html+='<div style="padding:12px 14px;background:#d1fae5;border-radius:8px;margin-bottom:12px">';
+      html+='<div style="font-size:13px;font-weight:700;color:var(--ok);margin-bottom:2px">✅ Interview Confirmed</div>';
+      html+='<div style="font-size:13px;color:var(--navy);font-weight:600">📅 '+esc(confirmed.datetime||confirmed.label||'')+'</div>';
+      html+='</div>';
+      if(activeIv.mode==='virtual'&&activeIv.meeting_link){
+        html+='<div style="padding:10px 14px;background:#eff6ff;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;gap:10px">';
+        html+='<span style="font-size:20px">💻</span>';
+        html+='<div style="flex:1"><div style="font-size:12px;font-weight:700;color:#1b3a6b">Virtual Meeting Link</div>';
+        if(activeIv.meeting_notes)html+='<div style="font-size:11px;color:var(--grey)">'+esc(activeIv.meeting_notes)+'</div>';
+        html+='</div><a href="'+esc(activeIv.meeting_link)+'" target="_blank" style="padding:8px 16px;background:#1b3a6b;color:#fff;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">Join Meeting →</a>';
+        html+='</div>';
+      }
+      if(activeIv.status==='scheduled'||activeIv.status==='feedback_pending'){
+        html+=renderClientFeedbackForm(c,ci,activeIv.round);
+      }
+    } else if(activeIv.status==='new_slots_requested'&&activeIv.client_availability_note){
+      html+='<div style="padding:10px 14px;background:#fef3c7;border-radius:8px;margin-bottom:12px">';
+      html+='<div style="font-size:13px;font-weight:600;color:#d97706">⏳ New slot request sent — our team will update shortly</div>';
+      html+='<div style="font-size:12px;color:var(--grey);margin-top:4px">Your preference: '+esc(activeIv.client_availability_note)+'</div>';
+      html+='</div>';
+    } else {
+      var slots=activeIv.slots||[];
+      var selKey='_slotSel_'+ci+'_'+activeIv.round;
+      if(slots.length){
+        html+='<div style="font-size:12px;font-weight:700;color:var(--grey);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Select a preferred slot:</div>';
+        slots.forEach(function(sl,si){
+          var isSelected=(window[selKey]===si);
+          html+='<div onclick="pickSlotNew(''+selKey+'','+si+',this)" '+
+            'style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid '+(isSelected?'var(--navy)':'var(--lgrey)')+
+            ';border-radius:8px;margin-bottom:8px;cursor:pointer;background:'+(isSelected?'#eff6ff':'#fff')+'">'+
+            '<span style="font-size:20px">'+(isSelected?'✅':'🗓')+'</span>'+
+            '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--navy)">'+esc(sl.datetime||sl.label||'')+'</div>'+
+            '<div style="font-size:11px;color:'+modeTxt+';font-weight:600">'+modeLabel+'</div></div></div>';
+        });
+        html+='<button class="btn bp" id="confBtn_'+ci+'_'+activeIv.round+'" '+
+          'onclick="confSlotNew(''+selKey+'','+ci+','+activeIv.round+')" '+
+          'style="width:100%;margin-top:8px;'+(window[selKey]===undefined?'opacity:.5;pointer-events:none':'')+'">✅ Confirm Selected Slot →</button>';
+        if(activeIv.notes)html+='<div style="font-size:12px;color:var(--grey);padding:8px;background:#f9f7f4;border-radius:6px;margin-top:10px">📌 '+esc(activeIv.notes)+'</div>';
+      } else {
+        html+='<div style="font-size:13px;color:var(--grey);text-align:center;padding:16px">Slot details coming soon...</div>';
+      }
+      html+='<button class="btn bo" onclick="reqNewSlots()" style="width:100%;margin-top:10px;font-size:12px">None of these work? Request alternative slots</button>';
+    }
+    html+='</div>';
   });
   el.innerHTML=html+nrHtml();
+}
+
+function renderClientFeedbackForm(cand,ci,round){
+  var fbKey='_fbOut_'+ci+'_'+round;
+  var out=window[fbKey]||'';
+  return '<div style="margin-top:14px;padding:14px;border:2px solid var(--lgrey);border-radius:8px">'+
+    '<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px">📝 Interview Feedback — Round '+round+'</div>'+
+    '<div style="display:flex;gap:10px;margin-bottom:12px">'+
+    '<button type="button" onclick="setClientFbOut(''+fbKey+'','selected','+ci+','+round+')" '+
+      'style="flex:1;padding:10px;border-radius:8px;border:2px solid '+(out==='selected'?'#059669':'var(--lgrey)')+
+      ';background:'+(out==='selected'?'#d1fae5':'transparent')+';color:'+(out==='selected'?'#059669':'var(--grey)')+
+      ';font-size:13px;font-weight:600;cursor:pointer">✅ Selected</button>'+
+    '<button type="button" onclick="setClientFbOut(''+fbKey+'','rejected','+ci+','+round+')" '+
+      'style="flex:1;padding:10px;border-radius:8px;border:2px solid '+(out==='rejected'?'#dc2626':'var(--lgrey)')+
+      ';background:'+(out==='rejected'?'#fee2e2':'transparent')+';color:'+(out==='rejected'?'#dc2626':'var(--grey)')+
+      ';font-size:13px;font-weight:600;cursor:pointer">❌ Rejected</button>'+
+    '</div>'+
+    (out==='rejected'?'<select id="fbReason_'+ci+'_'+round+'" style="width:100%;padding:8px 10px;border:1px solid var(--lgrey);border-radius:6px;font-size:13px;margin-bottom:8px">'+
+      '<option value="">— Reason for rejection —</option>'+
+      '<option>Not the right skill set</option><option>Communication not suitable</option>'+
+      '<option>Salary expectation mismatch</option><option>Culture fit concern</option>'+
+      '<option>Overqualified / Underqualified</option><option>Other</option></select>':'')+
+    '<textarea id="fbComment_'+ci+'_'+round+'" placeholder="Additional comments (optional)" rows="2" '+
+    'style="width:100%;border:1px solid var(--lgrey);border-radius:6px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:8px;box-sizing:border-box"></textarea>'+
+    (out?'<button class="btn bp" onclick="submitClientFeedback('+ci+','+round+')" style="width:100%">Submit Feedback</button>':'')+'</div>';
+}
+function setClientFbOut(fbKey,outcome,ci,round){window[fbKey]=outcome;renderPortal();}
+
+function pickSlotNew(selKey,si,el){
+  window[selKey]=si;
+  var parts=selKey.replace('_slotSel_','').split('_');
+  var ci=parts[0],round=parts[1];
+  var btn=document.getElementById('confBtn_'+ci+'_'+round);
+  if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+  var allOpts=el.parentNode.querySelectorAll('[onclick^="pickSlotNew"]');
+  allOpts.forEach(function(o,idx){
+    var isMe=idx===si;
+    o.style.border='2px solid '+(isMe?'var(--navy)':'var(--lgrey)');
+    o.style.background=isMe?'#eff6ff':'#fff';
+    o.querySelector('span').textContent=isMe?'✅':'🗓';
+  });
+}
+
+function confSlotNew(selKey,ci,round){
+  var si=window[selKey];
+  if(si===undefined){alert('Please select a slot first.');return;}
+  var cands=shareData.candidates||[];
+  var intCands=cands.filter(function(c){return c.interestStatus==='interested';});
+  var cand=intCands[ci];if(!cand)return;
+  var interviews=cand.interviews||[];
+  var iv=interviews.find(function(x){return x.round==round;});if(!iv)return;
+  var sl=iv.slots[si];if(!sl){alert('Slot not found.');return;}
+  iv.confirmed_slot=sl;iv.status='scheduled';
+  cand.interviewStatus='scheduled';cand.status='interview_scheduled';
+  shareData.candidates=cands;
+  sb.from('client_shares').update({candidates:cands}).eq('token',token).then(function(){
+    if(cand.submissionId&&shareData.task_id){
+      sb.from('recruitment_tasks').select('id,submissions').eq('id',shareData.task_id).maybeSingle().then(function(r){
+        if(!r.error&&r.data){
+          var subs=(r.data.submissions||[]).map(function(s){
+            if(s.id===cand.submissionId){
+              (s.interviews||[]).forEach(function(iv2){if(iv2.round==round){iv2.confirmed_slot=sl;iv2.status='scheduled';}});
+              s.interviewStatus='scheduled';
+            }
+            return s;
+          });
+          sb.from('recruitment_tasks').update({submissions:subs}).eq('id',r.data.id).then(function(){});
+        }
+      });
+    }
+    try{
+      emailjs.init('t4LYcYSryDAgwP0Iw');
+      emailjs.send('service_llgpy53','template_ofjfrbp',{
+        to_email:'info@opsisplacements.com',
+        subject:'Slot Confirmed — '+esc(cand.name||'')+' | '+esc(shareData.position_title||''),
+        message:'<p>Client confirmed slot for <strong>'+esc(cand.name||'')+'</strong></p>'+
+          '<p>Round '+round+' ('+getModeLabel(iv.mode)+'): '+esc(sl.datetime||'')+'</p>'+
+          (iv.mode==='virtual'?'<p>Please add meeting link in CRM.</p>':''),
+        from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'
+      });
+    }catch(e){}
+    renderPortal();
+  }).catch(function(){alert('Could not save. Try again.');});
+}
+
+function submitClientFeedback(ci,round){
+  var fbKey='_fbOut_'+ci+'_'+round;
+  var outcome=window[fbKey];
+  if(!outcome){alert('Please select Selected or Rejected.');return;}
+  var reason='';
+  if(outcome==='rejected'){
+    var rEl=document.getElementById('fbReason_'+ci+'_'+round);
+    reason=rEl?rEl.value:'';
+    if(!reason){alert('Please select a rejection reason.');return;}
+  }
+  var commentEl=document.getElementById('fbComment_'+ci+'_'+round);
+  var comments=commentEl?commentEl.value.trim():'';
+  var cands=shareData.candidates||[];
+  var intCands=cands.filter(function(c){return c.interestStatus==='interested';});
+  var cand=intCands[ci];if(!cand)return;
+  var interviews=cand.interviews||[];
+  var iv=interviews.find(function(x){return x.round==round;});if(!iv)return;
+  iv.feedback={outcome:outcome,reason:reason||null,comments:comments||null,
+    submitted_at:new Date().toISOString(),submitted_by:'client',on_behalf:false};
+  iv.status=outcome==='selected'?'selected':'rejected';
+  if(outcome==='rejected')cand.interviewStatus='rejected';
+  else cand.interviewStatus='feedback_received';
+  shareData.candidates=cands;
+  sb.from('client_shares').update({candidates:cands}).eq('token',token).then(function(){
+    if(cand.submissionId&&shareData.task_id){
+      sb.from('recruitment_tasks').select('id,submissions').eq('id',shareData.task_id).maybeSingle().then(function(r){
+        if(!r.error&&r.data){
+          var subs=(r.data.submissions||[]).map(function(s){
+            if(s.id===cand.submissionId){
+              (s.interviews||[]).forEach(function(iv2){if(iv2.round==round){iv2.feedback=iv.feedback;iv2.status=iv.status;}});
+              if(outcome==='rejected'){s.status='interview_rejected';s.interviewStatus='rejected';}
+              else s.interviewStatus='feedback_received';
+            }
+            return s;
+          });
+          sb.from('recruitment_tasks').update({submissions:subs}).eq('id',r.data.id).then(function(){});
+        }
+      });
+    }
+    try{
+      emailjs.init('t4LYcYSryDAgwP0Iw');
+      emailjs.send('service_llgpy53','template_ofjfrbp',{
+        to_email:'info@opsisplacements.com',
+        subject:(outcome==='selected'?'Candidate Selected':'Candidate Rejected')+' — Round '+round+' | '+esc(shareData.position_title||''),
+        message:'<p>Client feedback for <strong>'+esc(cand.name||'')+'</strong>:</p>'+
+          '<p>Outcome: '+(outcome==='selected'?'✅ Selected':'❌ Rejected')+'</p>'+
+          (reason?'<p>Reason: '+esc(reason)+'</p>':'')+(comments?'<p>Comments: '+esc(comments)+'</p>':'')+
+          (outcome==='selected'?'<p>Please schedule next round or proceed to offer.</p>':''),
+        from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'
+      });
+    }catch(e){}
+    window[fbKey]=null;
+    renderPortal();
+    alert(outcome==='selected'?'✅ Feedback submitted! Our team will coordinate the next steps.':'Feedback submitted. Thank you.');
+  }).catch(function(){alert('Could not save. Try again.');});
 }
 
 function reqNewSlots(){
@@ -377,17 +600,16 @@ function reqNewSlots(){
       emailjs.init('t4LYcYSryDAgwP0Iw');
       emailjs.send('service_llgpy53','template_ofjfrbp',{
         to_email:'info@opsisplacements.com',
-        subject:'Interview Slot Request — '+(shareData.client_company||'Client'),
-        message:'<p><strong>'+(shareData.client_company||'')+'</strong> has requested new interview slots.</p><p>Preferred times: <strong>'+msg+'</strong></p><p>Please coordinate with the candidate and update the portal.</p>',
+        subject:'Slot Request — '+(shareData.client_company||'Client'),
+        message:'<p><strong>'+(shareData.client_company||'')+'</strong> requested alternative slots.</p><p>Preferred: <strong>'+msg+'</strong></p>',
         from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'
       });
     }catch(e){}
-    alert('Your request has been sent to our team. We will update the available slots within 24 hours.');
+    alert('Your request has been sent. We will update slots within 24 hours.');
   }).catch(function(){alert('Could not send request. Please email info@opsisplacements.com');});
 }
 
 function pickSlot(ci,si){_candSel[ci]=si;renderPortal();}
-
 function confSlot(ci){
   var cwS=window._swSlots||[];
   var cand=cwS[ci];if(!cand||_candSel[ci]===undefined)return;
@@ -403,6 +625,7 @@ function confSlot(ci){
     renderPortal();
   }).catch(function(){alert('Could not save. Try again.');});
 }
+
 
 /* ── STAGE 4: OFFER ──────────────────────────────────────── */
 function renderOffer(el){
