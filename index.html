@@ -122,30 +122,50 @@ window.addEventListener('load',function(){
   setMsg('Connecting…');
   sb.from('client_shares').select('*').eq('token',token).maybeSingle().then(function(r){
     if(r&&r.data){
-      shareData=r.data;shareData._source='client_shares';shareData.action_log=shareData.action_log||[];
-      document.getElementById('wCo').textContent=shareData.client_company||'Welcome';
-      document.getElementById('wPo').textContent=(shareData.position_title||'Recruitment Portal')+' — Opsis Consulting';
-      setMsg('✅ Portal ready.');
+      var found=r.data;
+      // If this record has candidates, use it directly
+      if(found.candidates&&found.candidates.length>0){
+        shareData=found;shareData._source='client_shares';shareData.action_log=shareData.action_log||[];
+        document.getElementById('wCo').textContent=shareData.client_company||'Welcome';
+        document.getElementById('wPo').textContent=(shareData.position_title||'Recruitment Portal')+' — Opsis Consulting';
+        setMsg('✅ Portal ready.');
+      } else {
+        // Record exists but no candidates yet — check if another record for same client has candidates
+        var cid=found.client_id||'';
+        sb.from('client_shares').select('*').eq('client_id',cid).order('shared_at',{ascending:false}).limit(5).then(function(r2){
+          var withCands=r2&&r2.data&&r2.data.filter(function(x){return x.candidates&&x.candidates.length>0;});
+          var best=withCands&&withCands.length?withCands[0]:null;
+          if(best){
+            shareData=best;shareData._source='client_shares';shareData.action_log=shareData.action_log||[];
+          } else {
+            shareData=found;shareData._source='client_shares';shareData.action_log=shareData.action_log||[];
+          }
+          document.getElementById('wCo').textContent=shareData.client_company||'Welcome';
+          document.getElementById('wPo').textContent=(shareData.position_title||'Recruitment Portal')+' — Opsis Consulting';
+          setMsg('✅ Portal ready.');
+        }).catch(function(){
+          shareData=found;shareData._source='client_shares';shareData.action_log=shareData.action_log||[];
+          document.getElementById('wCo').textContent=shareData.client_company||'Welcome';
+          setMsg('✅ Portal ready.');
+        });
+      }
     } else {
       sb.from('jd_requests').select('*').eq('token',token).maybeSingle().then(function(r2){
         if(r2&&r2.data){
           var jdData=r2.data;
-          // Check if this client already has candidates shared via client_shares
-          // If yes, show candidates view instead of JD stage
-          sb.from('client_shares').select('*').eq('client_id',jdData.client_id||'').order('shared_at',{ascending:false}).limit(1).maybeSingle().then(function(r3){
-            if(r3&&r3.data&&(r3.data.candidates||[]).length>0){
-              // Client has candidates ready — use client_shares data
-              shareData=r3.data;shareData._source='client_shares';shareData.action_log=shareData.action_log||[];
+          sb.from('client_shares').select('*').eq('client_id',jdData.client_id||'').order('shared_at',{ascending:false}).limit(5).then(function(r3){
+            var withCands=r3&&r3.data&&r3.data.filter(function(x){return x.candidates&&x.candidates.length>0;});
+            var best=withCands&&withCands.length?withCands[0]:null;
+            if(best){
+              shareData=best;shareData._source='client_shares';shareData.action_log=shareData.action_log||[];
               document.getElementById('wCo').textContent=shareData.client_company||jdData.client_company||'Welcome';
               document.getElementById('wPo').textContent=(shareData.position_title||'Recruitment Portal')+' — Opsis Consulting';
-              setMsg('✅ Portal ready.');
             } else {
-              // No candidates yet — show JD stage
               shareData=jdData;shareData._source='jd_requests';shareData.stage=jdData.stage||'jd_pending';
               document.getElementById('wCo').textContent=shareData.client_company||'Welcome';
               document.getElementById('wPo').textContent=(shareData.position_title||'Open Positions')+' — Opsis Consulting';
-              setMsg('✅ Portal ready.');
             }
+            setMsg('✅ Portal ready.');
           }).catch(function(){
             shareData=jdData;shareData._source='jd_requests';shareData.stage=jdData.stage||'jd_pending';
             document.getElementById('wCo').textContent=shareData.client_company||'Welcome';
