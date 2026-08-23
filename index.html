@@ -345,6 +345,11 @@ function renderCands(el){
 function openProfile(i){
   var c=(shareData.candidates||[])[i];
   if(!c||!c.profileUrl)return;
+  // Plain URL (original file sent as-is) — open it directly, no decoding needed
+  if(c.profileUrl.indexOf('data:text/html;base64,')!==0){
+    window.open(c.profileUrl,'_blank');
+    return;
+  }
   try{
     var html=decodeURIComponent(escape(atob(c.profileUrl.replace('data:text/html;base64,',''))));
     var w=window.open('','_blank');
