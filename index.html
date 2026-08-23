@@ -348,16 +348,19 @@ function openProfile(i){
   try{
     var html=decodeURIComponent(escape(atob(c.profileUrl.replace('data:text/html;base64,',''))));
     var w=window.open('','_blank');
-    if(w){w.document.open();w.document.write(html);w.document.close();}
-    else{alert('Please allow pop-ups for this site to view the redacted CV.');}
-  }catch(e){
-    // Fallback: open as blob URL
-    try{
-      var blob=new Blob([decodeURIComponent(escape(atob(c.profileUrl.replace('data:text/html;base64,',''))))],{type:'text/html'});
+    if(w){
+      setTimeout(function(){
+        w.document.open('text/html','replace');
+        w.document.write(html);
+        w.document.close();
+      },50);
+    } else {
+      // Fallback: blob URL (works if pop-ups blocked)
+      var blob=new Blob([html],{type:'text/html'});
       var url=URL.createObjectURL(blob);
       window.open(url,'_blank');
-    }catch(e2){alert('Could not open profile: '+e2.message);}
-  }
+    }
+  }catch(e){alert('Could not open profile. Please allow pop-ups for this site.');}
 }
 
 function candCard(c,i){
