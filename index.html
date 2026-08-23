@@ -346,18 +346,28 @@ function candCard(c,i){
   var sc={interested:['#d1fae5','var(--ok)','Interested ✓'],not_interested:['#fee2e2','var(--err)','Not a Fit'],hold:['#fffbeb','var(--warn)','On Hold']}[c.interestStatus]||['var(--lgrey)','var(--grey)','Pending'];
   var ini=(c.name||'C').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
   var bg=['#1b3a6b','#2a5298','#34499e'][i%3];
-  return '<div class="cc"><div class="cc-hd" onclick="var b=document.getElementById(\'ccb'+i+'\');b.classList.toggle(\'open\')">'+
+  return '<div class="cc">'+
+  // ── Card header (always visible) ──
+  '<div class="cc-hd" onclick="var b=document.getElementById(\'ccb'+i+'\');b.classList.toggle(\'open\')">'+
   '<div class="av" style="background:'+bg+'">'+ini+'</div>'+
   '<div class="cn2"><div class="n">'+esc(c.name||'Candidate '+(i+1))+'</div>'+
-  '<div class="s">'+esc(c.currentRole||'')+(c.currentCompany?' · '+esc(c.currentCompany):'')+'</div></div>'+
-  '<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:'+sc[0]+';color:'+sc[1]+'">'+sc[2]+'</span><span style="color:var(--grey);margin-left:6px">▾</span></div>'+
+  '<div class="s">'+esc(c.experience||'')+(c.experience?' exp':'')+(c.noticePeriod?' · '+esc(c.noticePeriod)+' notice':'')+'</div></div>'+
+  '<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:'+sc[0]+';color:'+sc[1]+'">'+sc[2]+'</span>'+
+  '<span style="color:var(--grey);margin-left:6px">▾</span></div>'+
+  // ── Redacted CV link — always visible, outside collapsed body ──
+  (c.profileUrl?
+    '<div style="padding:0 16px 12px">'+
+    '<a href="'+esc(c.profileUrl)+'" target="_blank" '+
+    'style="display:flex;align-items:center;gap:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;text-decoration:none;color:#1b3a6b">'+
+    '<span style="font-size:18px">📄</span>'+
+    '<span style="flex:1"><div style="font-size:13px;font-weight:700;color:#1b3a6b">View Redacted CV</div>'+
+    '<div style="font-size:11px;color:#64748b">Identity protected · Opens in new tab</div></span>'+
+    '<span style="font-size:12px;font-weight:700;color:#2563eb">→</span>'+
+    '</a></div>':'')+
+  // ── Collapsed body ──
   '<div class="cc-bd" id="ccb'+i+'">'+
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0">'+
   [['💼','Experience',c.experience||'—'],['💰','Current CTC',c.currentCTC||'—'],['🎯','Expected',c.expectedCTC||'—'],['📅','Notice',c.noticePeriod||'—'],['📍','Location',c.location||'—'],['🎓','Qualification',c.qualification||'—']].map(function(s){return '<div class="chip"><div class="chip-l">'+s[0]+' '+s[1]+'</div><div class="chip-v">'+esc(s[2])+'</div></div>';}).join('')+'</div>'+
-  (c.profileUrl?'<a href="'+esc(c.profileUrl)+'" target="_blank" style="display:flex;align-items:center;gap:8px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:10px;text-decoration:none;color:#1b3a6b">'+
-    '<span style="font-size:16px">&#128196;</span>'+
-    '<span style="flex:1"><div style="font-size:13px;font-weight:700">View Full Profile</div><div style="font-size:11px;color:#888">Opens redacted resume in a new tab</div></span>'+
-    '<span style="font-size:12px;font-weight:700;color:#2563eb">&rarr;</span></a>':'')+
   (c.summary?'<div style="font-size:12px;color:var(--grey);line-height:1.6;margin-bottom:12px;background:var(--cream);padding:10px;border-radius:6px">'+esc(c.summary)+'</div>':'')+
   '<div class="fb-row">'+
   '<button class="fb i'+(c.interestStatus==='interested'?' a':'')+'" onclick="markI('+i+',\'interested\')">✅ Interested</button>'+
