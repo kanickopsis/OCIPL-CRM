@@ -589,7 +589,7 @@ function confSlotNew(selKey,ci,round){
   shareData.candidates=cands;
   sb.from('client_shares').update({candidates:cands}).eq('token',token).then(function(){
     if(cand.submissionId&&shareData.task_id){
-      sb.from('recruitment_tasks').select('id,submissions').eq('id',shareData.task_id).maybeSingle().then(function(r){
+      sb.from('recruitment_tasks').select('id,submissions,assigned_recruiter_email,position_title').eq('id',shareData.task_id).maybeSingle().then(function(r){
         if(!r.error&&r.data){
           var subs=(r.data.submissions||[]).map(function(s){
             if(s.id===cand.submissionId){
@@ -599,6 +599,28 @@ function confSlotNew(selKey,ci,round){
             return s;
           });
           sb.from('recruitment_tasks').update({submissions:subs}).eq('id',r.data.id).then(function(){});
+          // Notify the assigned recruiter directly — they need to follow up
+          // with the candidate to confirm attendance and connect them for
+          // the interview. Looked up via recruitment_tasks (already read by
+          // this page for the update above), not the users table — this
+          // page has no broad access to the user roster, intentionally,
+          // since it's public and unauthenticated.
+          var recEmail=r.data.assigned_recruiter_email;
+          if(recEmail){
+            try{
+              emailjs.init('t4LYcYSryDAgwP0Iw');
+              emailjs.send('service_llgpy53','template_ofjfrbp',{
+                to_email:recEmail,
+                subject:'\u2714 Client Confirmed Interview Slot — '+esc(cand.name||'')+' | '+esc(r.data.position_title||shareData.position_title||''),
+                message:'<p>The client confirmed an interview slot for <strong>'+esc(cand.name||'')+'</strong>.</p>'+
+                  '<p><strong>Round '+round+'</strong> ('+getModeLabel(iv.mode)+'): '+esc(sl.datetime||'')+'</p>'+
+                  '<p><strong>Next step:</strong> please follow up with the candidate directly to confirm they can attend this slot and connect them for the interview.</p>'+
+                  (iv.mode==='virtual'?'<p>Remember to add the meeting link in the CRM once confirmed.</p>':'')+
+                  (iv.mode==='inperson'&&iv.venue?'<p>Venue: '+esc(iv.venue)+'</p>':''),
+                from_email:'info@opsisplacements.com',from_name:'Opsis Portal',reply_to:'info@opsisplacements.com'
+              });
+            }catch(e2){}
+          }
         }
       });
     }
