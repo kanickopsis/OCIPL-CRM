@@ -421,7 +421,11 @@ function getModeTextColor(mode){
 function renderSlots(el){
   var cands=shareData.candidates||[];
   var cwS=cands.filter(function(c){
-    if(c.interestStatus!=='interested')return false;
+    // A candidate with actual interview slot data should be visible here
+    // regardless of whether they were separately marked Interested on the
+    // Review CVs step — the recruiter (or HR Head, who can send slots before
+    // interest is marked) may have sent slots first. Requiring both in a
+    // strict order was hiding successfully-sent slots from the client.
     if(c.interviews&&c.interviews.length)return true;
     if(c.interview_slots&&c.interview_slots.length)return true;
     return false;
