@@ -562,12 +562,25 @@ function pickSlotNew(selKey,si,el){
   });
 }
 
+// Must match the cwS filter in renderSlots() exactly — ci passed to
+// confSlotNew/submitClientFeedback is an index into THAT array, not into
+// candidates filtered by interestStatus (a different, potentially
+// differently-ordered/differently-sized array).
+function getSlotCandidate(ci){
+  var cands=shareData.candidates||[];
+  var cwS=cands.filter(function(c){
+    if(c.interviews&&c.interviews.length)return true;
+    if(c.interview_slots&&c.interview_slots.length)return true;
+    return false;
+  });
+  return cwS[ci]||null;
+}
+
 function confSlotNew(selKey,ci,round){
   var si=window[selKey];
   if(si===undefined){alert('Please select a slot first.');return;}
   var cands=shareData.candidates||[];
-  var intCands=cands.filter(function(c){return c.interestStatus==='interested';});
-  var cand=intCands[ci];if(!cand)return;
+  var cand=getSlotCandidate(ci);if(!cand)return;
   var interviews=cand.interviews||[];
   var iv=interviews.find(function(x){return x.round==round;});if(!iv)return;
   var sl=iv.slots[si];if(!sl){alert('Slot not found.');return;}
@@ -617,8 +630,7 @@ function submitClientFeedback(ci,round){
   var commentEl=document.getElementById('fbComment_'+ci+'_'+round);
   var comments=commentEl?commentEl.value.trim():'';
   var cands=shareData.candidates||[];
-  var intCands=cands.filter(function(c){return c.interestStatus==='interested';});
-  var cand=intCands[ci];if(!cand)return;
+  var cand=getSlotCandidate(ci);if(!cand)return;
   var interviews=cand.interviews||[];
   var iv=interviews.find(function(x){return x.round==round;});if(!iv)return;
   iv.feedback={outcome:outcome,reason:reason||null,comments:comments||null,
